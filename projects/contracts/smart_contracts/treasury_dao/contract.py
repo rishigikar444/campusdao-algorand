@@ -1,5 +1,6 @@
 from algopy import *
 from algopy.arc4 import abimethod
+from algopy import subroutine
 
 
 class TreasuryDAO(ARC4Contract):
@@ -35,9 +36,11 @@ class TreasuryDAO(ARC4Contract):
         # Vote tracking: key = hash(proposal_id, voter) => UInt64(1)
         self.has_voted = BoxMap(Bytes, UInt64, key_prefix="hv")
 
+    @subroutine
     def _member_key(self, club_id: UInt64, account: Account) -> Bytes:
         return op.concat(op.itob(club_id), account.bytes)
 
+    @subroutine
     def _vote_key(self, proposal_id: UInt64, voter: Account) -> Bytes:
         return op.concat(op.itob(proposal_id), voter.bytes)
 
@@ -101,7 +104,7 @@ class TreasuryDAO(ARC4Contract):
         pay_txn: gtxn.PaymentTransaction,
     ) -> UInt64:
         """Deposits ALGO into the club treasury. Anyone can deposit."""
-        _, exists = self.club_creator.maybe(club_id)
+        creator_val, exists = self.club_creator.maybe(club_id)
         assert exists, "Club does not exist"
         assert pay_txn.receiver == Global.current_application_address, "Payment must go to app"
         assert pay_txn.amount > 0, "Deposit must be > 0"
@@ -126,7 +129,7 @@ class TreasuryDAO(ARC4Contract):
         assert mbr_pay.receiver == Global.current_application_address, "MBR payment must go to app"
 
         # Verify caller is a member
-        membership, is_mem = self.is_member.maybe(self._member_key(club_id, Txn.sender))
+        mem_val, is_mem = self.is_member.maybe(self._member_key(club_id, Txn.sender))
         assert is_mem, "Only club members can create proposals"
 
         assert amount > 0, "Proposal amount must be > 0"
@@ -157,12 +160,12 @@ class TreasuryDAO(ARC4Contract):
         club_id = self.proposal_club[proposal_id]
 
         # Verify caller is a member of the club
-        _, is_mem = self.is_member.maybe(self._member_key(club_id, Txn.sender))
+        mem_val2, is_mem = self.is_member.maybe(self._member_key(club_id, Txn.sender))
         assert is_mem, "Only club members can vote"
 
         # Check not already voted
         vote_key = self._vote_key(proposal_id, Txn.sender)
-        _, already_voted = self.has_voted.maybe(vote_key)
+        vote_val, already_voted = self.has_voted.maybe(vote_key)
         assert not already_voted, "Already voted on this proposal"
 
         # Check deadline not passed
@@ -211,14 +214,14 @@ class TreasuryDAO(ARC4Contract):
     @abimethod()
     def get_treasury_balance(self, club_id: UInt64) -> UInt64:
         """Returns the treasury balance for a club."""
-        _, exists = self.club_creator.maybe(club_id)
+        creator_val2, exists = self.club_creator.maybe(club_id)
         assert exists, "Club does not exist"
         return self.club_treasury[club_id]
 
     @abimethod()
     def get_proposal_info(self, proposal_id: UInt64) -> tuple[UInt64, UInt64, UInt64, UInt64, UInt64]:
         """Returns (amount, votes_for, votes_against, deadline, executed) for a proposal."""
-        _, exists = self.proposal_club.maybe(proposal_id)
+        club_val, exists = self.proposal_club.maybe(proposal_id)
         assert exists, "Proposal does not exist"
 
         return (

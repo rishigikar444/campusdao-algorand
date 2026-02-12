@@ -1,5 +1,6 @@
 from algopy import *
 from algopy.arc4 import abimethod
+from algopy import subroutine
 
 
 class Splitwise(ARC4Contract):
@@ -36,9 +37,11 @@ class Splitwise(ARC4Contract):
         # Count of settlements per expense
         self.expense_settled_count = BoxMap(UInt64, UInt64, key_prefix="sc")
 
+    @subroutine
     def _group_member_key(self, group_id: UInt64, account: Account) -> Bytes:
         return op.concat(op.itob(group_id), account.bytes)
 
+    @subroutine
     def _settlement_key(self, expense_id: UInt64, account: Account) -> Bytes:
         return op.concat(op.itob(expense_id), account.bytes)
 
@@ -106,12 +109,12 @@ class Splitwise(ARC4Contract):
         mbr_pay covers box storage costs."""
         assert mbr_pay.receiver == Global.current_application_address, "MBR payment must go to app"
 
-        _, exists = self.group_creator.maybe(group_id)
+        creator_val, exists = self.group_creator.maybe(group_id)
         assert exists, "Group does not exist"
         assert self.group_active[group_id] == UInt64(1), "Group is closed"
 
         # Verify caller is a member
-        _, is_mem = self.is_group_member.maybe(self._group_member_key(group_id, Txn.sender))
+        mem_val, is_mem = self.is_group_member.maybe(self._group_member_key(group_id, Txn.sender))
         assert is_mem, "Only group members can add expenses"
 
         assert amount > 0, "Amount must be > 0"
@@ -129,21 +132,21 @@ class Splitwise(ARC4Contract):
 
         if participant1 != Global.zero_address:
             # Verify participant is group member
-            _, is_p1 = self.is_group_member.maybe(self._group_member_key(group_id, participant1))
+            p1_val, is_p1 = self.is_group_member.maybe(self._group_member_key(group_id, participant1))
             assert is_p1, "Participant 1 not in group"
             key1 = expense_id * UInt64(2**16) + p_index
             self.expense_participants[key1] = participant1
             p_index += UInt64(1)
 
         if participant2 != Global.zero_address:
-            _, is_p2 = self.is_group_member.maybe(self._group_member_key(group_id, participant2))
+            p2_val, is_p2 = self.is_group_member.maybe(self._group_member_key(group_id, participant2))
             assert is_p2, "Participant 2 not in group"
             key2 = expense_id * UInt64(2**16) + p_index
             self.expense_participants[key2] = participant2
             p_index += UInt64(1)
 
         if participant3 != Global.zero_address:
-            _, is_p3 = self.is_group_member.maybe(self._group_member_key(group_id, participant3))
+            p3_val, is_p3 = self.is_group_member.maybe(self._group_member_key(group_id, participant3))
             assert is_p3, "Participant 3 not in group"
             key3 = expense_id * UInt64(2**16) + p_index
             self.expense_participants[key3] = participant3
@@ -153,7 +156,7 @@ class Splitwise(ARC4Contract):
 
         self.expense_participant_count[expense_id] = p_index
         # Each participant's share = amount / number of participants
-        self.expense_share[expense_id] = amount / p_index
+        self.expense_share[expense_id] = amount // p_index
 
         return expense_id
 
@@ -166,7 +169,7 @@ class Splitwise(ARC4Contract):
         """Settles the caller's share of an expense by paying the payer.
         pay_txn must send the caller's share to the original payer.
         Returns remaining unsettled count."""
-        _, exists = self.expense_payer.maybe(expense_id)
+        payer_val, exists = self.expense_payer.maybe(expense_id)
         assert exists, "Expense does not exist"
 
         payer = self.expense_payer[expense_id]
@@ -177,7 +180,7 @@ class Splitwise(ARC4Contract):
 
         # Check caller hasn't already settled
         settle_key = self._settlement_key(expense_id, Txn.sender)
-        _, already_settled = self.has_settled.maybe(settle_key)
+        settle_val, already_settled = self.has_settled.maybe(settle_key)
         assert not already_settled, "Already settled this expense"
 
         # Verify caller is a participant
@@ -216,7 +219,7 @@ class Splitwise(ARC4Contract):
     @abimethod()
     def get_expense_info(self, expense_id: UInt64) -> tuple[UInt64, UInt64, UInt64, UInt64]:
         """Returns (amount, share_per_person, participant_count, settled_count)."""
-        _, exists = self.expense_payer.maybe(expense_id)
+        payer_val2, exists = self.expense_payer.maybe(expense_id)
         assert exists, "Expense does not exist"
 
         return (

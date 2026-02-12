@@ -61,14 +61,14 @@ class EventManager(ARC4Contract):
         assert Txn.sender == organizer, "Only the organizer can mint tickets"
 
         # Ensure tickets haven't already been minted for this event
-        _, already_minted = self.event_ticket_asa.maybe(event_id)
+        asa_val, already_minted = self.event_ticket_asa.maybe(event_id)
         assert not already_minted, "Tickets already minted for this event"
 
         assert mbr_pay.receiver == Global.current_application_address, "MBR payment must go to app"
 
         max_supply = self.event_max_supply[event_id]
 
-        # Create the ticket ASA — app holds total supply
+        # Create the ticket ASA - app holds total supply
         asa_txn = itxn.AssetConfig(
             total=max_supply,
             decimals=0,
@@ -92,7 +92,7 @@ class EventManager(ARC4Contract):
         """Buys a ticket. Payment goes to the treasury address.
         The ticket ASA is transferred from the app to the buyer.
         Buyer must have opted in to the ticket ASA first."""
-        _, exists = self.event_organizer.maybe(event_id)
+        org_val, exists = self.event_organizer.maybe(event_id)
         assert exists, "Event does not exist"
 
         assert self.event_sale_active[event_id] == UInt64(1), "Sales are closed"
@@ -125,7 +125,7 @@ class EventManager(ARC4Contract):
     ) -> bool:
         """Validates that the caller holds a ticket for the event.
         Marks the ticket as used (per-account). Returns True if valid."""
-        _, exists = self.event_organizer.maybe(event_id)
+        org_val2, exists = self.event_organizer.maybe(event_id)
         assert exists, "Event does not exist"
 
         stored_asa = self.event_ticket_asa[event_id]
@@ -136,10 +136,8 @@ class EventManager(ARC4Contract):
         assert opted_in, "Caller has not opted in to ticket ASA"
         assert balance > 0, "Caller does not hold a ticket"
 
-        # Mark as validated using a composite key: event_id * 2^32 + a sequential counter
-        # For simplicity, we just use a hash-like approach with sender-based key
-        # We'll track validation per event_id (simple approach: just mark in validated box)
-        _, already_validated = self.validated_tickets.maybe(ticket_asa_id)
+        # Mark as validated
+        vt_val, already_validated = self.validated_tickets.maybe(ticket_asa_id)
         assert not already_validated, "Ticket already validated"
 
         self.validated_tickets[ticket_asa_id] = event_id
@@ -156,7 +154,7 @@ class EventManager(ARC4Contract):
     @abimethod()
     def get_event_info(self, event_id: UInt64) -> tuple[UInt64, UInt64, UInt64, UInt64]:
         """Returns (ticket_price, max_supply, sold_count, sale_active) for an event."""
-        _, exists = self.event_organizer.maybe(event_id)
+        org_val3, exists = self.event_organizer.maybe(event_id)
         assert exists, "Event does not exist"
 
         return (
