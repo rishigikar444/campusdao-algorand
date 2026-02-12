@@ -170,9 +170,5 @@ node_modules
 
 
 
-# Ignore artifacts
-projects/contracts/smart_contracts/artifacts/
 
-# Ignore event_manager
-projects/contracts/smart_contracts/event_manager/
 
