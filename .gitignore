@@ -168,8 +168,11 @@ cython_debug/
 # NPM
 node_modules
 
-# Ignore full smart contracts folder
-projects/contracts/smart_contracts/
+
 
 # Ignore artifacts
 projects/contracts/smart_contracts/artifacts/
+
+# Ignore event_manager
+projects/contracts/smart_contracts/event_manager/
+
