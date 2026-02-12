@@ -6,13 +6,13 @@ logger = logging.getLogger(__name__)
 
 
 def deploy() -> None:
-    from smart_contracts.artifacts.bank.bank_client import BankFactory
+    from smart_contracts.artifacts.splitwise.splitwise_client import SplitwiseFactory
 
     algorand = algokit_utils.AlgorandClient.from_environment()
     deployer_ = algorand.account.from_environment("DEPLOYER")
 
     factory = algorand.client.get_typed_app_factory(
-        BankFactory, default_sender=deployer_.address
+        SplitwiseFactory, default_sender=deployer_.address
     )
 
     app_client, result = factory.deploy(
@@ -24,8 +24,13 @@ def deploy() -> None:
         algokit_utils.OperationPerformed.Create,
         algokit_utils.OperationPerformed.Replace,
     ]:
-        logger.info(
-            f"Deployed Bank app {app_client.app_id} to address {app_client.app_address}"
+        algorand.send.payment(
+            algokit_utils.PaymentParams(
+                amount=algokit_utils.AlgoAmount(algo=1),
+                sender=deployer_.address,
+                receiver=app_client.app_address,
+            )
         )
-
-
+        logger.info(
+            f"Deployed Splitwise app {app_client.app_id} to address {app_client.app_address}"
+        )
