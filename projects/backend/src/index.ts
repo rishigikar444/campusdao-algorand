@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import mongoose from 'mongoose'
 import eventsRouter from './routes/events.js'
+import marketsRouter from './routes/markets.js'
 
 const PORT = process.env.PORT || 3001
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/campus_superapp'
@@ -12,6 +13,7 @@ app.use(cors())
 app.use(express.json())
 
 app.use('/api/events', eventsRouter)
+app.use('/api/markets', marketsRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })
