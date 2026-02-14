@@ -4,6 +4,7 @@ import { getApplicationAddress, makePaymentTxnWithSuggestedParamsFromObject } fr
 import { microAlgos } from '@algorandfoundation/algokit-utils'
 import { useAlgorand } from '../hooks/useAlgorand'
 import { SplitwiseClient, SplitwiseFactory } from '../contracts/Splitwise'
+import XpWindow from './XpWindow'
 
 const ZERO_ADDR = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
 const MBR_AMOUNT = 200_000
@@ -16,27 +17,22 @@ const SplitwiseTab = () => {
   const [deploying, setDeploying] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // Create Group
   const [grpMember1, setGrpMember1] = useState('')
   const [grpMember2, setGrpMember2] = useState('')
   const [grpMember3, setGrpMember3] = useState('')
 
-  // Add Expense
   const [expGroupId, setExpGroupId] = useState('')
   const [expAmount, setExpAmount] = useState('')
   const [expPart1, setExpPart1] = useState('')
   const [expPart2, setExpPart2] = useState('')
   const [expPart3, setExpPart3] = useState('')
 
-  // Expense Info
   const [lookupExpId, setLookupExpId] = useState('')
   const [expenseInfo, setExpenseInfo] = useState<{ amount: string; share: string; participants: string; settled: string } | null>(null)
 
-  // Settle
   const [settleExpId, setSettleExpId] = useState('')
   const [settlePayerAddr, setSettlePayerAddr] = useState('')
 
-  // Close Group
   const [closeGroupId, setCloseGroupId] = useState('')
 
   const getClient = () => {
@@ -150,7 +146,6 @@ const SplitwiseTab = () => {
     try {
       setLoading(true)
       const client = getClient()
-      // Lookup expense to get the share amount
       const info = await client.send.getExpenseInfo({
         args: { expenseId: BigInt(settleExpId) },
         sender: activeAddress!,
@@ -195,51 +190,54 @@ const SplitwiseTab = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* App ID + Deploy */}
-      <div className="flex flex-col md:flex-row gap-4 items-end">
+      <div className="flex flex-col md:flex-row gap-3 items-end">
         <div className="flex-1">
-          <label className="label"><span className="label-text font-semibold">Application ID</span></label>
-          <input className="input input-bordered w-full" type="number" placeholder="Enter Splitwise App ID" value={appId} onChange={(e) => setAppId(e.target.value)} />
+          <label className="font-xp-body text-sm font-semibold block mb-1">Application ID</label>
+          <input className="xp-input" type="number" placeholder="Enter Splitwise App ID" value={appId} onChange={(e) => setAppId(e.target.value)} />
         </div>
-        <button className={`btn btn-accent ${deploying ? 'loading' : ''}`} disabled={deploying || !activeAddress} onClick={deploy}>
-          Deploy New
+        <button className="xp-btn" disabled={deploying || !activeAddress} onClick={deploy}>
+          {deploying ? 'Deploying...' : 'Deploy New'}
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Create Group */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Create Group</h3>
-            <input className="input input-bordered input-sm" placeholder="Member 1 Address" value={grpMember1} onChange={(e) => setGrpMember1(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Member 2 Address (optional)" value={grpMember2} onChange={(e) => setGrpMember2(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Member 3 Address (optional)" value={grpMember3} onChange={(e) => setGrpMember3(e.target.value)} />
-            <button className={`btn btn-primary btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={createGroup}>Create Group</button>
+        <XpWindow title="Create Group" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Member 1 Address" value={grpMember1} onChange={(e) => setGrpMember1(e.target.value)} />
+            <input className="xp-input" placeholder="Member 2 Address (optional)" value={grpMember2} onChange={(e) => setGrpMember2(e.target.value)} />
+            <input className="xp-input" placeholder="Member 3 Address (optional)" value={grpMember3} onChange={(e) => setGrpMember3(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={createGroup}>
+              {loading ? 'Working...' : 'Create Group'}
+            </button>
           </div>
-        </div>
+        </XpWindow>
 
         {/* Add Expense */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Add Expense</h3>
-            <input className="input input-bordered input-sm" placeholder="Group ID" type="number" value={expGroupId} onChange={(e) => setExpGroupId(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Total Amount (ALGO)" type="number" step="0.001" value={expAmount} onChange={(e) => setExpAmount(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Participant 1 Address" value={expPart1} onChange={(e) => setExpPart1(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Participant 2 (optional)" value={expPart2} onChange={(e) => setExpPart2(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Participant 3 (optional)" value={expPart3} onChange={(e) => setExpPart3(e.target.value)} />
-            <button className={`btn btn-primary btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={addExpense}>Add Expense</button>
+        <XpWindow title="Add Expense" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Group ID" type="number" value={expGroupId} onChange={(e) => setExpGroupId(e.target.value)} />
+            <input className="xp-input" placeholder="Total Amount (ALGO)" type="number" step="0.001" value={expAmount} onChange={(e) => setExpAmount(e.target.value)} />
+            <input className="xp-input" placeholder="Participant 1 Address" value={expPart1} onChange={(e) => setExpPart1(e.target.value)} />
+            <input className="xp-input" placeholder="Participant 2 (optional)" value={expPart2} onChange={(e) => setExpPart2(e.target.value)} />
+            <input className="xp-input" placeholder="Participant 3 (optional)" value={expPart3} onChange={(e) => setExpPart3(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={addExpense}>
+              {loading ? 'Working...' : 'Add Expense'}
+            </button>
           </div>
-        </div>
+        </XpWindow>
 
         {/* Expense Info */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Expense Info</h3>
-            <input className="input input-bordered input-sm" placeholder="Expense ID" type="number" value={lookupExpId} onChange={(e) => setLookupExpId(e.target.value)} />
-            <button className={`btn btn-info btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={lookupExpense}>Lookup</button>
+        <XpWindow title="Expense Info" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Expense ID" type="number" value={lookupExpId} onChange={(e) => setLookupExpId(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={lookupExpense}>
+              {loading ? 'Working...' : 'Lookup'}
+            </button>
             {expenseInfo && (
-              <div className="text-xs mt-2 space-y-1">
+              <div className="text-xs mt-1 space-y-1 font-xp-body">
                 <div>Total: <span className="font-mono">{expenseInfo.amount}</span></div>
                 <div>Share per person: <span className="font-mono">{expenseInfo.share}</span></div>
                 <div>Participants: <span className="font-mono">{expenseInfo.participants}</span></div>
@@ -247,26 +245,28 @@ const SplitwiseTab = () => {
               </div>
             )}
           </div>
-        </div>
+        </XpWindow>
 
         {/* Settle Expense */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Settle Expense</h3>
-            <input className="input input-bordered input-sm" placeholder="Expense ID" type="number" value={settleExpId} onChange={(e) => setSettleExpId(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Payer Address (who you owe)" value={settlePayerAddr} onChange={(e) => setSettlePayerAddr(e.target.value)} />
-            <button className={`btn btn-secondary btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={settleExpense}>Settle My Share</button>
+        <XpWindow title="Settle Expense" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Expense ID" type="number" value={settleExpId} onChange={(e) => setSettleExpId(e.target.value)} />
+            <input className="xp-input" placeholder="Payer Address (who you owe)" value={settlePayerAddr} onChange={(e) => setSettlePayerAddr(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={settleExpense}>
+              {loading ? 'Working...' : 'Settle My Share'}
+            </button>
           </div>
-        </div>
+        </XpWindow>
 
         {/* Close Group */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Close Group</h3>
-            <input className="input input-bordered input-sm" placeholder="Group ID" type="number" value={closeGroupId} onChange={(e) => setCloseGroupId(e.target.value)} />
-            <button className={`btn btn-error btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={closeGroup}>Close Group</button>
+        <XpWindow title="Close Group" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Group ID" type="number" value={closeGroupId} onChange={(e) => setCloseGroupId(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={closeGroup}>
+              {loading ? 'Working...' : 'Close Group'}
+            </button>
           </div>
-        </div>
+        </XpWindow>
       </div>
     </div>
   )

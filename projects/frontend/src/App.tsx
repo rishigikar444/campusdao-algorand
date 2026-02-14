@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { SupportedWallet, WalletId, WalletManager, WalletProvider } from '@txnlab/use-wallet-react'
 import { SnackbarProvider } from 'notistack'
 import Home from './Home'
+import LandingPage from './components/LandingPage'
 import { getAlgodConfigFromViteEnvironment, getKmdConfigFromViteEnvironment } from './utils/network/getAlgoClientConfigs'
 
 let supportedWallets: SupportedWallet[]
@@ -22,12 +24,11 @@ if (import.meta.env.VITE_ALGOD_NETWORK === 'localnet') {
     { id: WalletId.PERA },
     { id: WalletId.EXODUS },
     { id: WalletId.LUTE },
-    // If you are interested in WalletConnect v2 provider
-    // refer to https://github.com/TxnLab/use-wallet for detailed integration instructions
   ]
 }
 
 export default function App() {
+  const [page, setPage] = useState<'landing' | 'app'>('landing')
   const algodConfig = getAlgodConfigFromViteEnvironment()
 
   const walletManager = new WalletManager({
@@ -46,6 +47,10 @@ export default function App() {
       resetNetwork: true,
     },
   })
+
+  if (page === 'landing') {
+    return <LandingPage onLaunch={() => setPage('app')} />
+  }
 
   return (
     <SnackbarProvider maxSnack={3}>

@@ -16,24 +16,37 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    // Update state so the next render will show the fallback UI.
     return { hasError: true, error: error }
   }
 
   render(): ReactNode {
     if (this.state.hasError) {
-      // You can render any custom fallback UI
       return (
-        <div className="hero min-h-screen bg-teal-400">
-          <div className="hero-content text-center rounded-lg p-6 max-w-md bg-white mx-auto">
-            <div className="max-w-md">
-              <h1 className="text-4xl">Error occured</h1>
-              <p className="py-6">
-                {this.state.error?.message.includes('Attempt to get default algod configuration')
-                  ? 'Please make sure to set up your environment variables correctly. Create a .env file based on .env.template and fill in the required values. This controls the network and credentials for connections with Algod and Indexer.'
-                  : this.state.error?.message}
-              </p>
-            </div>
+        <div
+          className="min-h-screen flex items-center justify-center p-8"
+          style={{ backgroundColor: '#000080' }}
+        >
+          <div className="max-w-2xl" style={{ fontFamily: '"Lucida Console", "Courier New", monospace', color: '#fff' }}>
+            <p className="text-lg mb-6">
+              A problem has been detected and Campus SuperApp has been shut down to prevent damage to your blockchain.
+            </p>
+            <p className="mb-4 text-sm">
+              CRITICAL_PROCESS_DIED
+            </p>
+            <p className="mb-6 text-sm">
+              {this.state.error?.message.includes('Attempt to get default algod configuration')
+                ? 'Please make sure to set up your environment variables correctly. Create a .env file based on .env.template and fill in the required values. This controls the network and credentials for connections with Algod and Indexer.'
+                : this.state.error?.message}
+            </p>
+            <p className="text-sm mb-4">
+              Technical information:
+            </p>
+            <p className="text-sm mb-6">
+              *** STOP: 0x000000EF (0x00000000, 0x00000000, 0x00000000, 0x00000000)
+            </p>
+            <p className="text-sm">
+              Press any key to restart, or refresh the page to try again.
+            </p>
           </div>
         </div>
       )

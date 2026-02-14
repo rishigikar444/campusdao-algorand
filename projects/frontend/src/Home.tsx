@@ -1,84 +1,133 @@
 import { useWallet } from '@txnlab/use-wallet-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ConnectWallet from './components/ConnectWallet'
 import EventsTab from './components/EventsTab'
+import CreateEventTab from './components/CreateEventTab'
 import TreasuryTab from './components/TreasuryTab'
 import SplitwiseTab from './components/SplitwiseTab'
+import XpWindow from './components/XpWindow'
 import { ellipseAddress } from './utils/ellipseAddress'
 
-type Tab = 'events' | 'treasury' | 'splitwise'
+type Tab = 'events' | 'createEvent' | 'treasury' | 'splitwise'
+
+const TAB_LABELS: Record<Tab, string> = {
+  events: 'Events',
+  createEvent: 'Create Event',
+  treasury: 'Treasury',
+  splitwise: 'Splitwise',
+}
+
+// Tabs visible in the tab strip (createEvent is navigated to, not shown in strip)
+const VISIBLE_TABS: Tab[] = ['events', 'treasury', 'splitwise']
 
 const Home = () => {
   const [openWalletModal, setOpenWalletModal] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('events')
   const { activeAddress } = useWallet()
+  const [clock, setClock] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setClock(new Date()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
 
   const toggleWalletModal = () => setOpenWalletModal(!openWalletModal)
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-teal-400 via-cyan-300 to-sky-400">
-      {/* Header */}
-      <header className="navbar bg-base-100/80 backdrop-blur-md shadow-md sticky top-0 z-20 px-4">
-        <div className="flex-1">
-          <span className="text-xl font-extrabold text-teal-700">Campus SuperApp</span>
-        </div>
-        <div className="flex-none gap-2">
-          {activeAddress && (
-            <span className="text-sm font-mono text-gray-600 hidden sm:inline">
-              {ellipseAddress(activeAddress)}
-            </span>
-          )}
-          <button
-            data-test-id="connect-wallet"
-            className="btn btn-accent btn-sm rounded-full"
-            onClick={toggleWalletModal}
-          >
-            {activeAddress ? 'Wallet Connected' : 'Connect Wallet'}
-          </button>
-        </div>
-      </header>
+    <div className="xp-desktop relative" style={{ paddingBottom: '36px' }}>
+      {/* Main Content */}
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        <XpWindow title={`Campus SuperApp - [${TAB_LABELS[activeTab]}]`}>
+          {/* Tab Strip */}
+          <div className="flex items-end gap-0 px-2 -mb-px" style={{ borderBottom: '1px solid #808080' }}>
+            {VISIBLE_TABS.map((tab) => (
+              <button
+                key={tab}
+                className={activeTab === tab ? 'xp-tab-active' : 'xp-tab-inactive'}
+                onClick={() => setActiveTab(tab)}
+              >
+                {TAB_LABELS[tab]}
+              </button>
+            ))}
+            {/* Show Create Event tab only when active */}
+            {activeTab === 'createEvent' && (
+              <button className="xp-tab-active">
+                {TAB_LABELS.createEvent}
+              </button>
+            )}
+          </div>
 
-      {/* Tab Navigation */}
-      <div className="flex justify-center pt-4 px-4">
-        <div className="tabs tabs-boxed bg-base-100/80 backdrop-blur-md">
-          <button
-            className={`tab tab-lg ${activeTab === 'events' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('events')}
-          >
-            Events
-          </button>
-          <button
-            className={`tab tab-lg ${activeTab === 'treasury' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('treasury')}
-          >
-            Treasury
-          </button>
-          <button
-            className={`tab tab-lg ${activeTab === 'splitwise' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('splitwise')}
-          >
-            Splitwise
-          </button>
-        </div>
+          {/* Tab Content */}
+          <div className="p-4" style={{ backgroundColor: '#ECE9D8', borderTop: '1px solid #808080' }}>
+            {!activeAddress ? (
+              <div className="text-center py-12">
+                <h2 className="text-xl font-bold font-xp text-xp-title-blue mb-4">
+                  Connect your wallet to get started
+                </h2>
+                <button className="xp-btn px-6 py-2" onClick={toggleWalletModal}>
+                  Connect Wallet
+                </button>
+              </div>
+            ) : (
+              <>
+                {activeTab === 'events' && (
+                  <EventsTab onNavigateToCreate={() => setActiveTab('createEvent')} />
+                )}
+                {activeTab === 'createEvent' && (
+                  <CreateEventTab onBack={() => setActiveTab('events')} />
+                )}
+                {activeTab === 'treasury' && <TreasuryTab />}
+                {activeTab === 'splitwise' && <SplitwiseTab />}
+              </>
+            )}
+          </div>
+        </XpWindow>
       </div>
 
-      {/* Tab Content */}
-      <main className="max-w-5xl mx-auto px-4 py-6">
-        <div className="backdrop-blur-md bg-white/70 rounded-2xl p-6 shadow-xl">
-          {!activeAddress ? (
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-gray-600 mb-4">Connect your wallet to get started</h2>
-              <button className="btn btn-accent" onClick={toggleWalletModal}>Connect Wallet</button>
-            </div>
-          ) : (
-            <>
-              {activeTab === 'events' && <EventsTab />}
-              {activeTab === 'treasury' && <TreasuryTab />}
-              {activeTab === 'splitwise' && <SplitwiseTab />}
-            </>
-          )}
+      {/* XP Taskbar */}
+      <div className="xp-taskbar">
+        <button className="xp-start-btn">
+          <span className="text-lg">&#127987;</span>
+          start
+        </button>
+
+        {/* Taskbar Tab Items */}
+        <div className="flex items-center gap-1 ml-2 flex-1 overflow-hidden">
+          {VISIBLE_TABS.map((tab) => (
+            <button
+              key={tab}
+              className={`xp-taskbar-item ${activeTab === tab ? 'xp-taskbar-item-active' : ''}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {TAB_LABELS[tab]}
+            </button>
+          ))}
         </div>
-      </main>
+
+        {/* System Tray */}
+        <div className="xp-systray">
+          {activeAddress && (
+            <button
+              className="hover:underline cursor-pointer"
+              onClick={toggleWalletModal}
+              title={activeAddress}
+            >
+              {ellipseAddress(activeAddress)}
+            </button>
+          )}
+          {!activeAddress && (
+            <button
+              className="hover:underline cursor-pointer"
+              onClick={toggleWalletModal}
+            >
+              Connect
+            </button>
+          )}
+          <span className="border-l border-blue-400 pl-2">
+            {clock.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      </div>
 
       <ConnectWallet openModal={openWalletModal} closeModal={toggleWalletModal} />
     </div>

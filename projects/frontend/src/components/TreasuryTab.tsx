@@ -4,6 +4,7 @@ import { getApplicationAddress, makePaymentTxnWithSuggestedParamsFromObject } fr
 import { microAlgos } from '@algorandfoundation/algokit-utils'
 import { useAlgorand } from '../hooks/useAlgorand'
 import { TreasuryDaoClient, TreasuryDaoFactory } from '../contracts/TreasuryDAO'
+import XpWindow from './XpWindow'
 
 const ZERO_ADDR = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
 const MBR_AMOUNT = 200_000
@@ -16,36 +17,29 @@ const TreasuryTab = () => {
   const [deploying, setDeploying] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // Create Club
   const [quorum, setQuorum] = useState('')
   const [member1, setMember1] = useState('')
   const [member2, setMember2] = useState('')
   const [member3, setMember3] = useState('')
 
-  // Treasury Balance
   const [balClubId, setBalClubId] = useState('')
   const [treasuryBalance, setTreasuryBalance] = useState<string | null>(null)
 
-  // Deposit
   const [depClubId, setDepClubId] = useState('')
   const [depAmount, setDepAmount] = useState('')
 
-  // Create Proposal
   const [propClubId, setPropClubId] = useState('')
   const [propAmount, setPropAmount] = useState('')
   const [propRecipient, setPropRecipient] = useState('')
   const [propDeadline, setPropDeadline] = useState('')
   const [propMetadata, setPropMetadata] = useState('')
 
-  // Proposal Info
   const [lookupPropId, setLookupPropId] = useState('')
   const [proposalInfo, setProposalInfo] = useState<{ amount: string; votesFor: string; votesAgainst: string; deadline: string; executed: string } | null>(null)
 
-  // Vote
   const [voteProposalId, setVoteProposalId] = useState('')
   const [voteSupport, setVoteSupport] = useState('1')
 
-  // Execute
   const [execProposalId, setExecProposalId] = useState('')
 
   const getClient = () => {
@@ -238,103 +232,110 @@ const TreasuryTab = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* App ID + Deploy */}
-      <div className="flex flex-col md:flex-row gap-4 items-end">
+      <div className="flex flex-col md:flex-row gap-3 items-end">
         <div className="flex-1">
-          <label className="label"><span className="label-text font-semibold">Application ID</span></label>
-          <input className="input input-bordered w-full" type="number" placeholder="Enter TreasuryDAO App ID" value={appId} onChange={(e) => setAppId(e.target.value)} />
+          <label className="font-xp-body text-sm font-semibold block mb-1">Application ID</label>
+          <input className="xp-input" type="number" placeholder="Enter TreasuryDAO App ID" value={appId} onChange={(e) => setAppId(e.target.value)} />
         </div>
-        <button className={`btn btn-accent ${deploying ? 'loading' : ''}`} disabled={deploying || !activeAddress} onClick={deploy}>
-          Deploy New
+        <button className="xp-btn" disabled={deploying || !activeAddress} onClick={deploy}>
+          {deploying ? 'Deploying...' : 'Deploy New'}
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Create Club */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Create Club</h3>
-            <input className="input input-bordered input-sm" placeholder="Quorum (e.g. 2)" type="number" value={quorum} onChange={(e) => setQuorum(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Member 1 Address" value={member1} onChange={(e) => setMember1(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Member 2 Address (optional)" value={member2} onChange={(e) => setMember2(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Member 3 Address (optional)" value={member3} onChange={(e) => setMember3(e.target.value)} />
-            <button className={`btn btn-primary btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={createClub}>Create Club</button>
+        <XpWindow title="Create Club" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Quorum (e.g. 2)" type="number" value={quorum} onChange={(e) => setQuorum(e.target.value)} />
+            <input className="xp-input" placeholder="Member 1 Address" value={member1} onChange={(e) => setMember1(e.target.value)} />
+            <input className="xp-input" placeholder="Member 2 Address (optional)" value={member2} onChange={(e) => setMember2(e.target.value)} />
+            <input className="xp-input" placeholder="Member 3 Address (optional)" value={member3} onChange={(e) => setMember3(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={createClub}>
+              {loading ? 'Working...' : 'Create Club'}
+            </button>
           </div>
-        </div>
+        </XpWindow>
 
         {/* Treasury Balance */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Treasury Balance</h3>
-            <input className="input input-bordered input-sm" placeholder="Club ID" type="number" value={balClubId} onChange={(e) => setBalClubId(e.target.value)} />
-            <button className={`btn btn-info btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={fetchBalance}>Check Balance</button>
+        <XpWindow title="Treasury Balance" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Club ID" type="number" value={balClubId} onChange={(e) => setBalClubId(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={fetchBalance}>
+              {loading ? 'Working...' : 'Check Balance'}
+            </button>
             {treasuryBalance && <div className="text-sm font-mono mt-1">Balance: {treasuryBalance}</div>}
           </div>
-        </div>
+        </XpWindow>
 
         {/* Deposit */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Deposit</h3>
-            <input className="input input-bordered input-sm" placeholder="Club ID" type="number" value={depClubId} onChange={(e) => setDepClubId(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Amount (ALGO)" type="number" step="0.001" value={depAmount} onChange={(e) => setDepAmount(e.target.value)} />
-            <button className={`btn btn-primary btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={depositFunds}>Deposit</button>
+        <XpWindow title="Deposit" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Club ID" type="number" value={depClubId} onChange={(e) => setDepClubId(e.target.value)} />
+            <input className="xp-input" placeholder="Amount (ALGO)" type="number" step="0.001" value={depAmount} onChange={(e) => setDepAmount(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={depositFunds}>
+              {loading ? 'Working...' : 'Deposit'}
+            </button>
           </div>
-        </div>
+        </XpWindow>
 
         {/* Create Proposal */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Create Proposal</h3>
-            <input className="input input-bordered input-sm" placeholder="Club ID" type="number" value={propClubId} onChange={(e) => setPropClubId(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Amount (ALGO)" type="number" step="0.001" value={propAmount} onChange={(e) => setPropAmount(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Recipient Address" value={propRecipient} onChange={(e) => setPropRecipient(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Deadline Round" type="number" value={propDeadline} onChange={(e) => setPropDeadline(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Metadata / Description" value={propMetadata} onChange={(e) => setPropMetadata(e.target.value)} />
-            <button className={`btn btn-primary btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={createProposal}>Create Proposal</button>
+        <XpWindow title="Create Proposal" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Club ID" type="number" value={propClubId} onChange={(e) => setPropClubId(e.target.value)} />
+            <input className="xp-input" placeholder="Amount (ALGO)" type="number" step="0.001" value={propAmount} onChange={(e) => setPropAmount(e.target.value)} />
+            <input className="xp-input" placeholder="Recipient Address" value={propRecipient} onChange={(e) => setPropRecipient(e.target.value)} />
+            <input className="xp-input" placeholder="Deadline Round" type="number" value={propDeadline} onChange={(e) => setPropDeadline(e.target.value)} />
+            <input className="xp-input" placeholder="Metadata / Description" value={propMetadata} onChange={(e) => setPropMetadata(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={createProposal}>
+              {loading ? 'Working...' : 'Create Proposal'}
+            </button>
           </div>
-        </div>
+        </XpWindow>
 
         {/* Proposal Info */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Proposal Info</h3>
-            <input className="input input-bordered input-sm" placeholder="Proposal ID" type="number" value={lookupPropId} onChange={(e) => setLookupPropId(e.target.value)} />
-            <button className={`btn btn-info btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={lookupProposal}>Lookup</button>
+        <XpWindow title="Proposal Info" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Proposal ID" type="number" value={lookupPropId} onChange={(e) => setLookupPropId(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={lookupProposal}>
+              {loading ? 'Working...' : 'Lookup'}
+            </button>
             {proposalInfo && (
-              <div className="text-xs mt-2 space-y-1">
+              <div className="text-xs mt-1 space-y-1 font-xp-body">
                 <div>Amount: <span className="font-mono">{proposalInfo.amount}</span></div>
                 <div>Votes For: <span className="font-mono">{proposalInfo.votesFor}</span></div>
                 <div>Votes Against: <span className="font-mono">{proposalInfo.votesAgainst}</span></div>
                 <div>Deadline Round: <span className="font-mono">{proposalInfo.deadline}</span></div>
-                <div>Executed: <span className="badge badge-sm">{proposalInfo.executed}</span></div>
+                <div>Executed: <span className="xp-badge">{proposalInfo.executed}</span></div>
               </div>
             )}
           </div>
-        </div>
+        </XpWindow>
 
         {/* Vote */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Vote</h3>
-            <input className="input input-bordered input-sm" placeholder="Proposal ID" type="number" value={voteProposalId} onChange={(e) => setVoteProposalId(e.target.value)} />
-            <select className="select select-bordered select-sm" value={voteSupport} onChange={(e) => setVoteSupport(e.target.value)}>
+        <XpWindow title="Vote" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Proposal ID" type="number" value={voteProposalId} onChange={(e) => setVoteProposalId(e.target.value)} />
+            <select className="xp-select" value={voteSupport} onChange={(e) => setVoteSupport(e.target.value)}>
               <option value="1">Yes (Support)</option>
               <option value="0">No (Against)</option>
             </select>
-            <button className={`btn btn-secondary btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={vote}>Cast Vote</button>
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={vote}>
+              {loading ? 'Working...' : 'Cast Vote'}
+            </button>
           </div>
-        </div>
+        </XpWindow>
 
         {/* Execute Proposal */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Execute Proposal</h3>
-            <input className="input input-bordered input-sm" placeholder="Proposal ID" type="number" value={execProposalId} onChange={(e) => setExecProposalId(e.target.value)} />
-            <button className={`btn btn-error btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={executeProposal}>Execute</button>
+        <XpWindow title="Execute Proposal" showControls={false}>
+          <div className="flex flex-col gap-2">
+            <input className="xp-input" placeholder="Proposal ID" type="number" value={execProposalId} onChange={(e) => setExecProposalId(e.target.value)} />
+            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={executeProposal}>
+              {loading ? 'Working...' : 'Execute'}
+            </button>
           </div>
-        </div>
+        </XpWindow>
       </div>
     </div>
   )

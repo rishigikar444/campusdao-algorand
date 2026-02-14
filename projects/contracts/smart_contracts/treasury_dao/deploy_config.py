@@ -6,13 +6,13 @@ logger = logging.getLogger(__name__)
 
 
 def deploy() -> None:
-    from smart_contracts.artifacts.treasury_dao.treasury_dao_client import TreasuryDAOFactory
+    from smart_contracts.artifacts.treasury_dao.treasury_dao_client import TreasuryDaoFactory
 
     algorand = algokit_utils.AlgorandClient.from_environment()
     deployer_ = algorand.account.from_environment("DEPLOYER")
 
     factory = algorand.client.get_typed_app_factory(
-        TreasuryDAOFactory, default_sender=deployer_.address
+        TreasuryDaoFactory, default_sender=deployer_.address
     )
 
     app_client, result = factory.deploy(

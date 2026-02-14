@@ -1,3 +1,201 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  /* ── XP Desktop ── */
+  .xp-desktop {
+    @apply min-h-screen font-xp-body;
+    background: linear-gradient(135deg, #245EDC 0%, #3A6EA5 40%, #5B9BD5 100%);
+  }
+
+  /* ── XP Window ── */
+  .xp-window {
+    @apply rounded-t-lg overflow-hidden;
+    border: 2px solid #0A246A;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ── XP Title Bar ── */
+  .xp-titlebar {
+    @apply flex items-center justify-between px-2 py-1 select-none;
+    background: linear-gradient(180deg, #0A246A 0%, #3A6EA5 8%, #4A8BC2 40%, #3A6EA5 88%, #0A246A 100%);
+    min-height: 28px;
+  }
+
+  .xp-titlebar-text {
+    @apply text-white text-sm font-bold font-xp truncate;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ── Title Bar Buttons ── */
+  .xp-title-btn {
+    @apply w-5 h-5 flex items-center justify-center text-xs font-bold rounded-sm ml-0.5;
+    background: linear-gradient(180deg, #ECE9D8 0%, #D6D2C2 100%);
+    border: 1px solid #0A246A;
+    color: #000;
+    line-height: 1;
+  }
+
+  .xp-title-btn:hover {
+    @apply brightness-110;
+  }
+
+  .xp-title-btn-close {
+    background: linear-gradient(180deg, #E08070 0%, #C85040 100%);
+    color: #fff;
+  }
+
+  .xp-title-btn-close:hover {
+    background: linear-gradient(180deg, #F09080 0%, #D86050 100%);
+  }
+
+  /* ── XP Window Body ── */
+  .xp-window-body {
+    @apply p-4 font-xp-body text-sm;
+    background-color: #ECE9D8;
+  }
+
+  /* ── XP Buttons ── */
+  .xp-btn {
+    @apply px-4 py-1 text-sm font-xp-body cursor-pointer select-none;
+    background: linear-gradient(180deg, #fff 0%, #ECE9D8 85%, #D6D2C2 100%);
+    border: 1px solid #003399;
+    border-radius: 3px;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+    color: #000;
+  }
+
+  .xp-btn:hover {
+    background: linear-gradient(180deg, #fff 0%, #F0EDE1 85%, #E0DDD1 100%);
+  }
+
+  .xp-btn:active {
+    background: linear-gradient(180deg, #D6D2C2 0%, #ECE9D8 100%);
+    box-shadow: inset -1px -1px 0 #fff, inset 1px 1px 0 #808080;
+  }
+
+  .xp-btn:disabled {
+    @apply cursor-not-allowed;
+    color: #808080;
+    background: #ECE9D8;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
+  }
+
+  /* ── XP Inputs ── */
+  .xp-input {
+    @apply w-full px-2 py-1 text-sm font-xp-body;
+    background: #fff;
+    border: 1px solid #7F9DB9;
+    border-radius: 0;
+    box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.15);
+    color: #000;
+  }
+
+  .xp-input:focus {
+    outline: 1px solid #316AC5;
+  }
+
+  .xp-select {
+    @apply w-full px-2 py-1 text-sm font-xp-body;
+    background: #fff;
+    border: 1px solid #7F9DB9;
+    border-radius: 0;
+    color: #000;
+  }
+
+  /* ── XP Taskbar ── */
+  .xp-taskbar {
+    @apply fixed bottom-0 left-0 right-0 flex items-center px-1 z-50;
+    background: linear-gradient(180deg, #245EDC 0%, #1F3A6E 3%, #1A3460 50%, #1F3A6E 97%, #245EDC 100%);
+    height: 36px;
+    border-top: 2px solid #4A8BC2;
+  }
+
+  .xp-start-btn {
+    @apply flex items-center gap-1 px-3 py-0.5 text-white text-sm font-bold font-xp rounded-r-lg cursor-pointer select-none;
+    background: linear-gradient(180deg, #4DA53E 0%, #3C8D2F 40%, #2D7A22 100%);
+    border: 1px solid #2D5F1B;
+    height: 28px;
+    border-radius: 0 8px 8px 0;
+  }
+
+  .xp-start-btn:hover {
+    background: linear-gradient(180deg, #5DB54E 0%, #4C9D3F 40%, #3D8A32 100%);
+  }
+
+  /* ── Taskbar Items ── */
+  .xp-taskbar-item {
+    @apply px-3 py-0.5 text-white text-xs font-xp-body truncate cursor-pointer;
+    background: linear-gradient(180deg, #3C6EB4 0%, #2A5298 100%);
+    border: 1px solid #1A3460;
+    border-radius: 2px;
+    max-width: 160px;
+    height: 24px;
+    line-height: 22px;
+  }
+
+  .xp-taskbar-item-active {
+    background: linear-gradient(180deg, #1A3460 0%, #2A5298 100%);
+    box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ── System Tray ── */
+  .xp-systray {
+    @apply flex items-center gap-2 px-2 text-white text-xs font-xp-body;
+    background: linear-gradient(180deg, #1A84C6 0%, #166DB3 100%);
+    border-left: 1px solid #0A246A;
+    height: 28px;
+  }
+
+  /* ── XP Tabs ── */
+  .xp-tab-active {
+    @apply px-4 py-1 text-sm font-xp-body cursor-pointer select-none;
+    background: #ECE9D8;
+    border: 1px solid #808080;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: -1px;
+    position: relative;
+    z-index: 1;
+    font-weight: bold;
+  }
+
+  .xp-tab-inactive {
+    @apply px-4 py-1 text-sm font-xp-body cursor-pointer select-none;
+    background: #D6D2C2;
+    border: 1px solid #808080;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: -1px;
+    color: #444;
+  }
+
+  .xp-tab-inactive:hover {
+    background: #E0DDD1;
+  }
+
+  /* ── Desktop Icon ── */
+  .xp-desktop-icon {
+    @apply flex flex-col items-center gap-1 p-2 cursor-pointer select-none rounded;
+    width: 80px;
+    text-align: center;
+  }
+
+  .xp-desktop-icon:hover {
+    background: rgba(49, 106, 197, 0.4);
+  }
+
+  .xp-desktop-icon span {
+    @apply text-xs text-white font-xp-body;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  }
+
+  /* ── Badge ── */
+  .xp-badge {
+    @apply inline-block px-2 py-0 text-xs font-xp-body;
+    background: #ECE9D8;
+    border: 1px solid #808080;
+    border-radius: 2px;
+  }
+}

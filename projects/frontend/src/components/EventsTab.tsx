@@ -1,288 +1,311 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSnackbar } from 'notistack'
-import { getApplicationAddress, makePaymentTxnWithSuggestedParamsFromObject } from 'algosdk'
+import { makePaymentTxnWithSuggestedParamsFromObject } from 'algosdk'
 import { microAlgos } from '@algorandfoundation/algokit-utils'
 import { useAlgorand } from '../hooks/useAlgorand'
-import { EventManagerClient, EventManagerFactory } from '../contracts/EventManager'
+import { EventManagerClient } from '../contracts/EventManager'
+import XpWindow from './XpWindow'
 
-const MBR_AMOUNT = 200_000
+interface EventData {
+  _id: string
+  eventId: number
+  appId: number
+  ticketAsaId?: number
+  name: string
+  description: string
+  imageUrl: string
+  eventDate: string     // ISO date string
+  organizer: string
+  clubAppId: number
+  ticketPrice: number   // microAlgos
+  maxSupply: number
+  soldCount: number
+  saleActive: boolean
+}
 
-const EventsTab = () => {
+// Deterministic color palette for ticket art
+const TICKET_COLORS = [
+  ['#6A11CB', '#2575FC'],
+  ['#F7971E', '#FFD200'],
+  ['#00B4DB', '#0083B0'],
+  ['#ED213A', '#93291E'],
+  ['#11998E', '#38EF7D'],
+  ['#6441A5', '#2a0845'],
+]
+
+interface EventsTabProps {
+  onNavigateToCreate: () => void
+}
+
+const EventsTab = ({ onNavigateToCreate }: EventsTabProps) => {
   const { enqueueSnackbar } = useSnackbar()
   const { algorand, activeAddress, transactionSigner } = useAlgorand()
 
-  const [appId, setAppId] = useState<string>('')
-  const [deploying, setDeploying] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [events, setEvents] = useState<EventData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [buyingId, setBuyingId] = useState<string | null>(null)
 
-  // Create Event
-  const [clubAppId, setClubAppId] = useState('')
-  const [ticketPrice, setTicketPrice] = useState('')
-  const [maxSupply, setMaxSupply] = useState('')
+  useEffect(() => {
+    fetchEvents()
+  }, [])
 
-  // Event Info
-  const [lookupEventId, setLookupEventId] = useState('')
-  const [eventInfo, setEventInfo] = useState<{ price: string; supply: string; sold: string; active: string } | null>(null)
-
-  // Mint / Buy / Validate / Close
-  const [mintEventId, setMintEventId] = useState('')
-  const [buyEventId, setBuyEventId] = useState('')
-  const [treasuryAddr, setTreasuryAddr] = useState('')
-  const [validateEventId, setValidateEventId] = useState('')
-  const [validateAsaId, setValidateAsaId] = useState('')
-  const [closeEventId, setCloseEventId] = useState('')
-
-  const getClient = () => {
-    if (!appId || !activeAddress) throw new Error('Set App ID and connect wallet')
-    return new EventManagerClient({
-      appId: BigInt(appId),
-      algorand,
-      defaultSigner: transactionSigner,
-    })
-  }
-
-  const makeMbrTxn = async (amount = MBR_AMOUNT) => {
-    const sp = await algorand.client.algod.getTransactionParams().do()
-    return makePaymentTxnWithSuggestedParamsFromObject({
-      sender: activeAddress!,
-      receiver: getApplicationAddress(Number(appId)),
-      amount,
-      suggestedParams: sp,
-    })
-  }
-
-  const deploy = async () => {
-    try {
-      if (!activeAddress) throw new Error('Connect wallet')
-      setDeploying(true)
-      const factory = new EventManagerFactory({ defaultSender: activeAddress, algorand })
-      const res = await factory.send.create.bare()
-      const id = String(res.appClient.appId)
-      setAppId(id)
-      enqueueSnackbar(`EventManager deployed. App ID: ${id}`, { variant: 'success' })
-    } catch (e) {
-      enqueueSnackbar(`Deploy failed: ${(e as Error).message}`, { variant: 'error' })
-    } finally {
-      setDeploying(false)
-    }
-  }
-
-  const createEvent = async () => {
+  const fetchEvents = async () => {
     try {
       setLoading(true)
-      const client = getClient()
-      const mbrTxn = await makeMbrTxn()
-      const res = await client.send.createEvent({
-        args: {
-          clubAppId: BigInt(clubAppId || '0'),
-          ticketPrice: BigInt(Math.round(Number(ticketPrice) * 1_000_000)),
-          maxSupply: BigInt(maxSupply),
-          mbrPay: { txn: mbrTxn, signer: transactionSigner },
-        },
-        sender: activeAddress!,
-        extraFee: microAlgos(1000),
-      })
-      enqueueSnackbar(`Event created! ID: ${res.return}`, { variant: 'success' })
-    } catch (e) {
-      enqueueSnackbar(`Create event failed: ${(e as Error).message}`, { variant: 'error' })
+      setError(null)
+      const res = await fetch('/api/events')
+      if (!res.ok) throw new Error(`Failed to fetch events: ${res.statusText}`)
+      const data = await res.json()
+      setEvents(data)
+    } catch (err) {
+      setError((err as Error).message)
     } finally {
       setLoading(false)
     }
   }
 
-  const lookupEvent = async () => {
-    try {
-      setLoading(true)
-      const client = getClient()
-      const res = await client.send.getEventInfo({
-        args: { eventId: BigInt(lookupEventId) },
-        sender: activeAddress!,
-      })
-      if (res.return) {
-        const [price, supply, sold, active] = res.return
-        setEventInfo({
-          price: `${Number(price) / 1_000_000} ALGO`,
-          supply: supply.toString(),
-          sold: sold.toString(),
-          active: active === 1n ? 'Active' : 'Closed',
-        })
-      }
-    } catch (e) {
-      enqueueSnackbar(`Lookup failed: ${(e as Error).message}`, { variant: 'error' })
-    } finally {
-      setLoading(false)
-    }
+  const formatPrice = (microAlgos: number) => {
+    const algo = microAlgos / 1_000_000
+    return algo === 0 ? 'FREE' : `${algo} ALGO`
   }
 
-  const mintTicket = async () => {
-    try {
-      setLoading(true)
-      const client = getClient()
-      const mbrTxn = await makeMbrTxn()
-      const res = await client.send.mintTicket({
-        args: {
-          eventId: BigInt(mintEventId),
-          mbrPay: { txn: mbrTxn, signer: transactionSigner },
-        },
-        sender: activeAddress!,
-        extraFee: microAlgos(2000),
-      })
-      enqueueSnackbar(`Tickets minted! ASA ID: ${res.return}`, { variant: 'success' })
-    } catch (e) {
-      enqueueSnackbar(`Mint failed: ${(e as Error).message}`, { variant: 'error' })
-    } finally {
-      setLoading(false)
-    }
+  // Encode a BoxMap key: 2-byte ASCII prefix + 8-byte big-endian uint64
+  const encodeBoxName = (prefix: string, eventId: number): Uint8Array => {
+    const prefixBytes = new TextEncoder().encode(prefix)
+    const idBytes = new Uint8Array(8)
+    new DataView(idBytes.buffer).setBigUint64(0, BigInt(eventId))
+    const combined = new Uint8Array(prefixBytes.length + 8)
+    combined.set(prefixBytes)
+    combined.set(idBytes, prefixBytes.length)
+    return combined
   }
 
-  const buyTicket = async () => {
+  const buyTicket = async (event: EventData) => {
+    if (!activeAddress) {
+      enqueueSnackbar('Connect your wallet first', { variant: 'warning' })
+      return
+    }
+    if (!event.ticketAsaId) {
+      enqueueSnackbar('Tickets have not been minted for this event yet', { variant: 'warning' })
+      return
+    }
+
     try {
-      setLoading(true)
-      const client = getClient()
-      // Look up event price first
+      setBuyingId(event._id)
+
+      const client = new EventManagerClient({
+        appId: BigInt(event.appId),
+        algorand,
+        defaultSigner: transactionSigner,
+      })
+
+      // Fetch on-chain price to be safe
       const info = await client.send.getEventInfo({
-        args: { eventId: BigInt(buyEventId) },
-        sender: activeAddress!,
+        args: { eventId: BigInt(event.eventId) },
+        sender: activeAddress,
       })
-      const price = info.return![0]
+      const price = Number(info.return![0])
+
+      // Opt the buyer into the ticket ASA if not already opted in
+      const ticketAsaId = event.ticketAsaId
+      try {
+        await algorand.client.algod
+          .accountAssetInformation(activeAddress, ticketAsaId)
+          .do()
+      } catch {
+        // Not opted in yet — send ASA opt-in (0-amount transfer to self)
+        const { makeAssetTransferTxnWithSuggestedParamsFromObject } = await import('algosdk')
+        const sp = await algorand.client.algod.getTransactionParams().do()
+        const assetOptIn = makeAssetTransferTxnWithSuggestedParamsFromObject({
+          sender: activeAddress,
+          receiver: activeAddress,
+          amount: 0,
+          assetIndex: ticketAsaId,
+          suggestedParams: sp,
+        })
+        const signed = await transactionSigner([assetOptIn], [0])
+        await algorand.client.algod.sendRawTransaction(signed[0]).do()
+        // Wait for confirmation
+        await new Promise((r) => setTimeout(r, 4000))
+      }
+
+      // Build payment txn to the organizer (treasury)
       const sp = await algorand.client.algod.getTransactionParams().do()
       const payTxn = makePaymentTxnWithSuggestedParamsFromObject({
-        sender: activeAddress!,
-        receiver: treasuryAddr,
-        amount: Number(price),
+        sender: activeAddress,
+        receiver: event.organizer,
+        amount: price,
         suggestedParams: sp,
       })
+
+      // Manually specify box + asset references to avoid resource-limit errors
+      const eid = event.eventId
       await client.send.buyTicket({
         args: {
-          eventId: BigInt(buyEventId),
+          eventId: BigInt(eid),
           payTxn: { txn: payTxn, signer: transactionSigner },
-          treasuryAddress: treasuryAddr,
+          treasuryAddress: event.organizer,
         },
-        sender: activeAddress!,
+        sender: activeAddress,
         extraFee: microAlgos(2000),
+        boxReferences: [
+          encodeBoxName('eo', eid),
+          encodeBoxName('ea', eid),
+          encodeBoxName('es', eid),
+          encodeBoxName('em', eid),
+          encodeBoxName('ep', eid),
+          encodeBoxName('et', eid),
+        ],
+        assetReferences: [BigInt(ticketAsaId)],
+        populateAppCallResources: false,
       })
-      enqueueSnackbar('Ticket purchased!', { variant: 'success' })
+
+      enqueueSnackbar(`Ticket purchased for "${event.name}"!`, { variant: 'success' })
+
+      // Update sold count in DB
+      await fetch(`/api/events/${event._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ soldCount: event.soldCount + 1 }),
+      })
+
+      fetchEvents()
     } catch (e) {
-      enqueueSnackbar(`Buy failed: ${(e as Error).message}`, { variant: 'error' })
+      enqueueSnackbar(`Purchase failed: ${(e as Error).message}`, { variant: 'error' })
     } finally {
-      setLoading(false)
+      setBuyingId(null)
     }
   }
 
-  const validateTicket = async () => {
-    try {
-      setLoading(true)
-      const client = getClient()
-      const res = await client.send.validateTicket({
-        args: {
-          eventId: BigInt(validateEventId),
-          ticketAsaId: BigInt(validateAsaId),
-        },
-        sender: activeAddress!,
-      })
-      enqueueSnackbar(`Ticket valid: ${res.return}`, { variant: 'success' })
-    } catch (e) {
-      enqueueSnackbar(`Validate failed: ${(e as Error).message}`, { variant: 'error' })
-    } finally {
-      setLoading(false)
-    }
+  if (loading) {
+    return (
+      <div className="text-center py-12 font-xp-body text-sm text-gray-500">
+        Loading events...
+      </div>
+    )
   }
 
-  const closeSales = async () => {
-    try {
-      setLoading(true)
-      const client = getClient()
-      await client.send.closeSales({
-        args: { eventId: BigInt(closeEventId) },
-        sender: activeAddress!,
-      })
-      enqueueSnackbar('Sales closed!', { variant: 'success' })
-    } catch (e) {
-      enqueueSnackbar(`Close failed: ${(e as Error).message}`, { variant: 'error' })
-    } finally {
-      setLoading(false)
-    }
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-12">
+        <div className="font-xp-body text-sm text-red-600">
+          Could not load events: {error}
+        </div>
+        <button className="xp-btn text-xs" onClick={fetchEvents}>
+          Retry
+        </button>
+      </div>
+    )
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* App ID + Deploy */}
-      <div className="flex flex-col md:flex-row gap-4 items-end">
-        <div className="flex-1">
-          <label className="label"><span className="label-text font-semibold">Application ID</span></label>
-          <input className="input input-bordered w-full" type="number" placeholder="Enter EventManager App ID" value={appId} onChange={(e) => setAppId(e.target.value)} />
+    <div className="flex flex-col gap-4">
+      {events.length === 0 ? (
+        <div className="text-center py-12 font-xp-body text-sm text-gray-500">
+          No events yet. Be the first to create one!
         </div>
-        <button className={`btn btn-accent ${deploying ? 'loading' : ''}`} disabled={deploying || !activeAddress} onClick={deploy}>
-          Deploy New
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {events.map((event, i) => {
+            const [c1, c2] = TICKET_COLORS[i % TICKET_COLORS.length]
+            const remaining = event.maxSupply - event.soldCount
+            const isBuying = buyingId === event._id
+
+            return (
+              <XpWindow key={event._id} title={event.name} showControls={false}>
+                {/* Ticket Image Area — 3/4 of the card */}
+                <div
+                  className="relative flex flex-col items-center justify-center select-none"
+                  style={{
+                    background: event.imageUrl
+                      ? `url(${event.imageUrl}) center/cover no-repeat`
+                      : `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
+                    height: '220px',
+                    margin: '-16px -16px 0 -16px',
+                  }}
+                >
+                  {/* Ticket stub decoration */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-3"
+                    style={{
+                      background:
+                        'repeating-linear-gradient(180deg, transparent 0px, transparent 8px, rgba(255,255,255,0.15) 8px, rgba(255,255,255,0.15) 16px)',
+                    }}
+                  />
+                  <div className="text-white text-center px-6">
+                    <div className="text-4xl mb-2">&#127915;</div>
+                    <div
+                      className="text-lg font-bold font-xp"
+                      style={{ textShadow: '1px 2px 4px rgba(0,0,0,0.4)' }}
+                    >
+                      {event.name}
+                    </div>
+                    {event.description && (
+                      <div className="text-xs mt-1 opacity-90 line-clamp-2">
+                        {event.description}
+                      </div>
+                    )}
+                    <div className="text-xs mt-2 opacity-90 font-bold">
+                      {new Date(event.eventDate).toLocaleDateString(undefined, {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
+                    <div className="text-xs mt-1 opacity-80">
+                      {remaining} / {event.maxSupply} tickets left
+                    </div>
+                  </div>
+                  {/* Perforated edge */}
+                  <div className="absolute bottom-0 left-0 right-0 h-3 flex justify-between px-1">
+                    {Array.from({ length: 20 }).map((_, j) => (
+                      <div
+                        key={j}
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: '#ECE9D8' }}
+                      />
+                    ))}
+                  </div>
+                  {/* Sold out / closed overlay */}
+                  {(!event.saleActive || remaining <= 0) && (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                    >
+                      <span className="text-white text-xl font-bold font-xp">
+                        {remaining <= 0 ? 'SOLD OUT' : 'SALES CLOSED'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom strip — price + mint button */}
+                <div className="flex items-center justify-between pt-4">
+                  <div className="font-xp-body">
+                    <span className="text-xs text-gray-500">Price</span>
+                    <div className="text-sm font-bold">{formatPrice(event.ticketPrice)}</div>
+                  </div>
+                  <button
+                    className="xp-btn text-xs px-3"
+                    disabled={remaining <= 0 || !event.saleActive || isBuying || !activeAddress}
+                    onClick={() => buyTicket(event)}
+                  >
+                    {isBuying ? 'Buying...' : remaining <= 0 ? 'Sold Out' : 'Mint Ticket'}
+                  </button>
+                </div>
+              </XpWindow>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Create Event Button */}
+      <div className="flex justify-center pt-2 pb-2">
+        <button className="xp-btn text-xs px-4 py-1" onClick={onNavigateToCreate}>
+          + Create Event
         </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Create Event */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Create Event</h3>
-            <input className="input input-bordered input-sm" placeholder="Club App ID (0 if none)" value={clubAppId} onChange={(e) => setClubAppId(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Ticket Price (ALGO)" type="number" step="0.001" value={ticketPrice} onChange={(e) => setTicketPrice(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Max Supply" type="number" value={maxSupply} onChange={(e) => setMaxSupply(e.target.value)} />
-            <button className={`btn btn-primary btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={createEvent}>Create Event</button>
-          </div>
-        </div>
-
-        {/* Event Lookup */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Event Lookup</h3>
-            <input className="input input-bordered input-sm" placeholder="Event ID" type="number" value={lookupEventId} onChange={(e) => setLookupEventId(e.target.value)} />
-            <button className={`btn btn-info btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={lookupEvent}>Lookup</button>
-            {eventInfo && (
-              <div className="text-xs mt-2 space-y-1">
-                <div>Price: <span className="font-mono">{eventInfo.price}</span></div>
-                <div>Max Supply: <span className="font-mono">{eventInfo.supply}</span></div>
-                <div>Sold: <span className="font-mono">{eventInfo.sold}</span></div>
-                <div>Status: <span className="badge badge-sm">{eventInfo.active}</span></div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Mint Tickets */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Mint Tickets</h3>
-            <input className="input input-bordered input-sm" placeholder="Event ID" type="number" value={mintEventId} onChange={(e) => setMintEventId(e.target.value)} />
-            <button className={`btn btn-secondary btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={mintTicket}>Mint Ticket ASA</button>
-          </div>
-        </div>
-
-        {/* Buy Ticket */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Buy Ticket</h3>
-            <input className="input input-bordered input-sm" placeholder="Event ID" type="number" value={buyEventId} onChange={(e) => setBuyEventId(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Treasury Address" value={treasuryAddr} onChange={(e) => setTreasuryAddr(e.target.value)} />
-            <button className={`btn btn-primary btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={buyTicket}>Buy Ticket</button>
-          </div>
-        </div>
-
-        {/* Validate Ticket */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Validate Ticket</h3>
-            <input className="input input-bordered input-sm" placeholder="Event ID" type="number" value={validateEventId} onChange={(e) => setValidateEventId(e.target.value)} />
-            <input className="input input-bordered input-sm" placeholder="Ticket ASA ID" type="number" value={validateAsaId} onChange={(e) => setValidateAsaId(e.target.value)} />
-            <button className={`btn btn-warning btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={validateTicket}>Validate</button>
-          </div>
-        </div>
-
-        {/* Close Sales */}
-        <div className="card bg-base-100 shadow">
-          <div className="card-body">
-            <h3 className="card-title text-sm">Close Sales</h3>
-            <input className="input input-bordered input-sm" placeholder="Event ID" type="number" value={closeEventId} onChange={(e) => setCloseEventId(e.target.value)} />
-            <button className={`btn btn-error btn-sm ${loading ? 'loading' : ''}`} disabled={loading || !appId || !activeAddress} onClick={closeSales}>Close Sales</button>
-          </div>
-        </div>
       </div>
     </div>
   )
