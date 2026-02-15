@@ -1,273 +1,592 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSnackbar } from 'notistack'
-import { getApplicationAddress, makePaymentTxnWithSuggestedParamsFromObject } from 'algosdk'
+import { getApplicationAddress, makePaymentTxnWithSuggestedParamsFromObject, decodeAddress } from 'algosdk'
 import { microAlgos } from '@algorandfoundation/algokit-utils'
 import { useAlgorand } from '../hooks/useAlgorand'
-import { SplitwiseClient, SplitwiseFactory } from '../contracts/Splitwise'
+import { SplitwiseClient } from '../contracts/Splitwise'
 import XpWindow from './XpWindow'
+import { ellipseAddress } from '../utils/ellipseAddress'
 
 const ZERO_ADDR = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
-const MBR_AMOUNT = 200_000
 
-const SplitwiseTab = () => {
+// Encode a BoxMap key: prefix bytes + 8-byte big-endian uint64
+const encodeBoxName = (prefix: string, id: number): Uint8Array => {
+  const prefixBytes = new TextEncoder().encode(prefix)
+  const idBytes = new Uint8Array(8)
+  new DataView(idBytes.buffer).setBigUint64(0, BigInt(id))
+  const combined = new Uint8Array(prefixBytes.length + 8)
+  combined.set(prefixBytes)
+  combined.set(idBytes, prefixBytes.length)
+  return combined
+}
+
+// Encode composite box key: prefix + 8-byte id + 32-byte address public key
+const encodeMemberBoxName = (prefix: string, id: number, address: string): Uint8Array => {
+  const prefixBytes = new TextEncoder().encode(prefix)
+  const idBytes = new Uint8Array(8)
+  new DataView(idBytes.buffer).setBigUint64(0, BigInt(id))
+  const addrBytes = decodeAddress(address).publicKey
+  const combined = new Uint8Array(prefixBytes.length + 8 + 32)
+  combined.set(prefixBytes)
+  combined.set(idBytes, prefixBytes.length)
+  combined.set(addrBytes, prefixBytes.length + 8)
+  return combined
+}
+
+interface Member {
+  name: string
+  address: string
+}
+
+interface GroupData {
+  _id: string
+  groupId: number
+  appId: number
+  name: string
+  creator: string
+  members: Member[]
+  active: boolean
+}
+
+interface ExpenseData {
+  _id: string
+  expenseId: number
+  appId: number
+  groupId: number
+  description: string
+  amount: number
+  payer: string
+  participants: string[]
+  sharePerPerson: number
+  settledBy: string[]
+}
+
+interface SplitwiseTabProps {
+  onNavigateToCreate: () => void
+}
+
+const SplitwiseTab = ({ onNavigateToCreate }: SplitwiseTabProps) => {
   const { enqueueSnackbar } = useSnackbar()
   const { algorand, activeAddress, transactionSigner } = useAlgorand()
 
-  const [appId, setAppId] = useState<string>('')
-  const [deploying, setDeploying] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [groups, setGroups] = useState<GroupData[]>([])
+  const [expenses, setExpenses] = useState<Record<number, ExpenseData[]>>({}) // keyed by groupId
+  const [loadingGroups, setLoadingGroups] = useState(true)
+  const [loadingAction, setLoadingAction] = useState(false)
 
-  const [grpMember1, setGrpMember1] = useState('')
-  const [grpMember2, setGrpMember2] = useState('')
-  const [grpMember3, setGrpMember3] = useState('')
+  // Expanded group for add-expense form
+  const [expandedGroup, setExpandedGroup] = useState<number | null>(null)
 
-  const [expGroupId, setExpGroupId] = useState('')
+  // Add expense form state
+  const [expDesc, setExpDesc] = useState('')
   const [expAmount, setExpAmount] = useState('')
-  const [expPart1, setExpPart1] = useState('')
-  const [expPart2, setExpPart2] = useState('')
-  const [expPart3, setExpPart3] = useState('')
+  const [expParticipants, setExpParticipants] = useState<string[]>([])
 
-  const [lookupExpId, setLookupExpId] = useState('')
-  const [expenseInfo, setExpenseInfo] = useState<{ amount: string; share: string; participants: string; settled: string } | null>(null)
-
-  const [settleExpId, setSettleExpId] = useState('')
-  const [settlePayerAddr, setSettlePayerAddr] = useState('')
-
-  const [closeGroupId, setCloseGroupId] = useState('')
-
-  const getClient = () => {
-    if (!appId || !activeAddress) throw new Error('Set App ID and connect wallet')
-    return new SplitwiseClient({
-      appId: BigInt(appId),
-      algorand,
-      defaultSigner: transactionSigner,
-    })
-  }
-
-  const makeMbrTxn = async (amount = MBR_AMOUNT) => {
-    const sp = await algorand.client.algod.getTransactionParams().do()
-    return makePaymentTxnWithSuggestedParamsFromObject({
-      sender: activeAddress!,
-      receiver: getApplicationAddress(Number(appId)),
-      amount,
-      suggestedParams: sp,
-    })
-  }
-
-  const deploy = async () => {
-    try {
+  const getClient = useCallback(
+    (appId: number) => {
       if (!activeAddress) throw new Error('Connect wallet')
-      setDeploying(true)
-      const factory = new SplitwiseFactory({ defaultSender: activeAddress, algorand })
-      const res = await factory.send.create.bare()
-      const id = String(res.appClient.appId)
-      setAppId(id)
-      enqueueSnackbar(`Splitwise deployed. App ID: ${id}`, { variant: 'success' })
-    } catch (e) {
-      enqueueSnackbar(`Deploy failed: ${(e as Error).message}`, { variant: 'error' })
+      return new SplitwiseClient({
+        appId: BigInt(appId),
+        algorand,
+        defaultSigner: transactionSigner,
+      })
+    },
+    [activeAddress, algorand, transactionSigner],
+  )
+
+  const getMemberName = useCallback(
+    (address: string, group: GroupData) => {
+      const m = group.members.find((m) => m.address === address)
+      return m ? m.name : ellipseAddress(address)
+    },
+    [],
+  )
+
+  // Load groups from backend
+  const loadGroups = useCallback(async () => {
+    if (!activeAddress) return
+    try {
+      setLoadingGroups(true)
+      const res = await fetch(`/api/splitwise/groups?address=${activeAddress}&all=true`)
+      if (!res.ok) throw new Error('Failed to load groups')
+      const data: GroupData[] = await res.json()
+      setGroups(data)
+
+      // Load expenses for all groups
+      const expMap: Record<number, ExpenseData[]> = {}
+      for (const g of data) {
+        try {
+          const expRes = await fetch(`/api/splitwise/expenses?appId=${g.appId}&groupId=${g.groupId}`)
+          if (expRes.ok) {
+            expMap[g.groupId] = await expRes.json()
+          }
+        } catch {
+          // skip
+        }
+      }
+      setExpenses(expMap)
+    } catch {
+      // No groups yet
     } finally {
-      setDeploying(false)
+      setLoadingGroups(false)
+    }
+  }, [activeAddress])
+
+  useEffect(() => {
+    loadGroups()
+  }, [loadGroups])
+
+  const toggleExpand = (groupId: number) => {
+    if (expandedGroup === groupId) {
+      setExpandedGroup(null)
+    } else {
+      setExpandedGroup(groupId)
+      setExpDesc('')
+      setExpAmount('')
+      setExpParticipants([])
     }
   }
 
-  const createGroup = async () => {
-    try {
-      setLoading(true)
-      const client = getClient()
-      const mbrTxn = await makeMbrTxn()
-      const res = await client.send.createGroup({
-        args: {
-          member1: grpMember1 || ZERO_ADDR,
-          member2: grpMember2 || ZERO_ADDR,
-          member3: grpMember3 || ZERO_ADDR,
-          mbrPay: { txn: mbrTxn, signer: transactionSigner },
-        },
-        sender: activeAddress!,
-        extraFee: microAlgos(1000),
-      })
-      enqueueSnackbar(`Group created! ID: ${res.return}`, { variant: 'success' })
-    } catch (e) {
-      enqueueSnackbar(`Create group failed: ${(e as Error).message}`, { variant: 'error' })
-    } finally {
-      setLoading(false)
-    }
+  const toggleParticipant = (addr: string) => {
+    setExpParticipants((prev) =>
+      prev.includes(addr) ? prev.filter((a) => a !== addr) : [...prev, addr],
+    )
   }
 
-  const addExpense = async () => {
+  const addExpense = async (group: GroupData) => {
     try {
-      setLoading(true)
-      const client = getClient()
-      const mbrTxn = await makeMbrTxn()
-      const res = await client.send.addExpense({
-        args: {
-          groupId: BigInt(expGroupId),
-          amount: BigInt(Math.round(Number(expAmount) * 1_000_000)),
-          participant1: expPart1 || ZERO_ADDR,
-          participant2: expPart2 || ZERO_ADDR,
-          participant3: expPart3 || ZERO_ADDR,
-          mbrPay: { txn: mbrTxn, signer: transactionSigner },
-        },
+      if (!expAmount || Number(expAmount) <= 0) {
+        enqueueSnackbar('Amount must be positive', { variant: 'warning' })
+        return
+      }
+      if (expParticipants.length === 0) {
+        enqueueSnackbar('Select at least one participant who owes', { variant: 'warning' })
+        return
+      }
+
+      setLoadingAction(true)
+      const client = getClient(group.appId)
+      const amountMicro = Math.round(Number(expAmount) * 1_000_000)
+
+      // Guess next expense_id
+      const countBig = await client.state.global.expenseCount()
+      const nextExpId = Number(countBig ?? 0) + 1
+
+      const p1 = expParticipants[0] || ZERO_ADDR
+      const p2 = expParticipants[1] || ZERO_ADDR
+      const p3 = expParticipants[2] || ZERO_ADDR
+
+      // Build all box references for add_expense:
+      // eg, ep, ea, es, en, sc (keyed by expense_id) = 6
+      // xp (expense_id * 2^16 + index) for each participant = up to 3
+      // ig (read for member verification) for each participant = up to 3
+      // gc (read for group existence check) = 1
+      // ga (read for group active check) = 1
+      // ig for sender (member check) = 1
+      const allBoxes: Uint8Array[] = [
+        encodeBoxName('eg', nextExpId),
+        encodeBoxName('ep', nextExpId),
+        encodeBoxName('ea', nextExpId),
+        encodeBoxName('es', nextExpId),
+        encodeBoxName('en', nextExpId),
+        encodeBoxName('sc', nextExpId),
+        encodeBoxName('gc', group.groupId),
+        encodeBoxName('ga', group.groupId),
+        encodeMemberBoxName('ig', group.groupId, activeAddress!),
+      ]
+
+      // xp + ig boxes for each participant
+      for (let i = 0; i < expParticipants.length; i++) {
+        allBoxes.push(encodeBoxName('xp', nextExpId * 65536 + i))
+        allBoxes.push(encodeMemberBoxName('ig', group.groupId, expParticipants[i]))
+      }
+
+      // Split across pad() + addExpense() (8 + remainder)
+      const padBoxes = allBoxes.slice(0, 8)
+      const addBoxes = allBoxes.slice(8)
+
+      // Build MBR payment
+      const sp = await algorand.client.algod.getTransactionParams().do()
+      const mbrTxn = makePaymentTxnWithSuggestedParamsFromObject({
         sender: activeAddress!,
-        extraFee: microAlgos(1000),
+        receiver: getApplicationAddress(group.appId),
+        amount: 400_000,
+        suggestedParams: sp,
       })
-      enqueueSnackbar(`Expense added! ID: ${res.return}`, { variant: 'success' })
+
+      const res = await client.newGroup()
+        .pad({
+          args: [],
+          sender: activeAddress!,
+          boxReferences: padBoxes,
+        })
+        .addExpense({
+          args: {
+            groupId: BigInt(group.groupId),
+            amount: BigInt(amountMicro),
+            participant1: p1,
+            participant2: p2,
+            participant3: p3,
+            mbrPay: { txn: mbrTxn, signer: transactionSigner },
+          },
+          sender: activeAddress!,
+          extraFee: microAlgos(2000),
+          boxReferences: addBoxes,
+        })
+        .send()
+
+      const expenseId = Number(res.returns[1])
+      const sharePerPerson = Math.floor(amountMicro / expParticipants.length)
+
+      // Save to backend
+      await fetch('/api/splitwise/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          expenseId,
+          appId: group.appId,
+          groupId: group.groupId,
+          description: expDesc.trim(),
+          amount: amountMicro,
+          payer: activeAddress,
+          participants: expParticipants,
+          sharePerPerson,
+        }),
+      })
+
+      enqueueSnackbar(`Expense added! Each person owes ${(sharePerPerson / 1_000_000).toFixed(3)} ALGO`, { variant: 'success' })
+
+      // Reset form and reload
+      setExpDesc('')
+      setExpAmount('')
+      setExpParticipants([])
+      await loadGroups()
     } catch (e) {
       enqueueSnackbar(`Add expense failed: ${(e as Error).message}`, { variant: 'error' })
     } finally {
-      setLoading(false)
+      setLoadingAction(false)
     }
   }
 
-  const lookupExpense = async () => {
+  const settleExpense = async (expense: ExpenseData, group: GroupData) => {
     try {
-      setLoading(true)
-      const client = getClient()
-      const res = await client.send.getExpenseInfo({
-        args: { expenseId: BigInt(lookupExpId) },
-        sender: activeAddress!,
-      })
-      if (res.return) {
-        const [amount, share, participants, settled] = res.return
-        setExpenseInfo({
-          amount: `${Number(amount) / 1_000_000} ALGO`,
-          share: `${Number(share) / 1_000_000} ALGO`,
-          participants: participants.toString(),
-          settled: settled.toString(),
-        })
+      setLoadingAction(true)
+      const client = getClient(expense.appId)
+
+      // Build box references for settle_expense:
+      // ep (expense_payer), es (expense_share), en (participant_count),
+      // sc (settled_count), hs (settlement key for sender),
+      // xp (participant entries to verify caller)
+      const allBoxes: Uint8Array[] = [
+        encodeBoxName('ep', expense.expenseId),
+        encodeBoxName('es', expense.expenseId),
+        encodeBoxName('en', expense.expenseId),
+        encodeBoxName('sc', expense.expenseId),
+        encodeMemberBoxName('hs', expense.expenseId, activeAddress!),
+      ]
+      // xp boxes for participant iteration
+      for (let i = 0; i < expense.participants.length; i++) {
+        allBoxes.push(encodeBoxName('xp', expense.expenseId * 65536 + i))
       }
-    } catch (e) {
-      enqueueSnackbar(`Lookup failed: ${(e as Error).message}`, { variant: 'error' })
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  const settleExpense = async () => {
-    try {
-      setLoading(true)
-      const client = getClient()
-      const info = await client.send.getExpenseInfo({
-        args: { expenseId: BigInt(settleExpId) },
-        sender: activeAddress!,
-      })
-      const share = Number(info.return![1])
+      // The payer is who we need to pay
       const sp = await algorand.client.algod.getTransactionParams().do()
       const payTxn = makePaymentTxnWithSuggestedParamsFromObject({
         sender: activeAddress!,
-        receiver: settlePayerAddr,
-        amount: share,
+        receiver: expense.payer,
+        amount: expense.sharePerPerson,
         suggestedParams: sp,
       })
-      const res = await client.send.settleExpense({
+
+      await client.send.settleExpense({
         args: {
-          expenseId: BigInt(settleExpId),
+          expenseId: BigInt(expense.expenseId),
           payTxn: { txn: payTxn, signer: transactionSigner },
         },
         sender: activeAddress!,
+        boxReferences: allBoxes,
       })
-      enqueueSnackbar(`Settled! Remaining: ${res.return}`, { variant: 'success' })
+
+      // Update backend
+      await fetch(`/api/splitwise/expenses/${expense._id}/settle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: activeAddress }),
+      })
+
+      enqueueSnackbar(`Settled! Paid ${(expense.sharePerPerson / 1_000_000).toFixed(3)} ALGO to ${getMemberName(expense.payer, group)}`, { variant: 'success' })
+      await loadGroups()
     } catch (e) {
       enqueueSnackbar(`Settle failed: ${(e as Error).message}`, { variant: 'error' })
     } finally {
-      setLoading(false)
+      setLoadingAction(false)
     }
   }
 
-  const closeGroup = async () => {
+  const closeGroup = async (group: GroupData) => {
     try {
-      setLoading(true)
-      const client = getClient()
+      setLoadingAction(true)
+      const client = getClient(group.appId)
+
       await client.send.closeGroup({
-        args: { groupId: BigInt(closeGroupId) },
+        args: { groupId: BigInt(group.groupId) },
         sender: activeAddress!,
+        boxReferences: [
+          encodeBoxName('gc', group.groupId),
+          encodeBoxName('ga', group.groupId),
+        ],
       })
-      enqueueSnackbar('Group closed!', { variant: 'success' })
+
+      // Update backend
+      await fetch(`/api/splitwise/groups/${group._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: false }),
+      })
+
+      enqueueSnackbar(`Group "${group.name}" closed`, { variant: 'success' })
+      await loadGroups()
     } catch (e) {
       enqueueSnackbar(`Close failed: ${(e as Error).message}`, { variant: 'error' })
     } finally {
-      setLoading(false)
+      setLoadingAction(false)
     }
+  }
+
+  if (loadingGroups) {
+    return (
+      <div className="text-center py-8 font-xp-body text-sm text-gray-500">
+        Loading your groups...
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* App ID + Deploy */}
-      <div className="flex flex-col md:flex-row gap-3 items-end">
-        <div className="flex-1">
-          <label className="font-xp-body text-sm font-semibold block mb-1">Application ID</label>
-          <input className="xp-input" type="number" placeholder="Enter Splitwise App ID" value={appId} onChange={(e) => setAppId(e.target.value)} />
-        </div>
-        <button className="xp-btn" disabled={deploying || !activeAddress} onClick={deploy}>
-          {deploying ? 'Deploying...' : 'Deploy New'}
+      <div className="flex justify-between items-center">
+        <h2 className="font-xp-body text-sm font-bold">My Groups</h2>
+        <button className="xp-btn text-xs" onClick={onNavigateToCreate}>
+          + New Group
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Create Group */}
-        <XpWindow title="Create Group" showControls={false}>
-          <div className="flex flex-col gap-2">
-            <input className="xp-input" placeholder="Member 1 Address" value={grpMember1} onChange={(e) => setGrpMember1(e.target.value)} />
-            <input className="xp-input" placeholder="Member 2 Address (optional)" value={grpMember2} onChange={(e) => setGrpMember2(e.target.value)} />
-            <input className="xp-input" placeholder="Member 3 Address (optional)" value={grpMember3} onChange={(e) => setGrpMember3(e.target.value)} />
-            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={createGroup}>
-              {loading ? 'Working...' : 'Create Group'}
-            </button>
-          </div>
-        </XpWindow>
+      {groups.length === 0 ? (
+        <div className="text-center py-8 font-xp-body text-sm text-gray-500">
+          <p>You don't have any groups yet.</p>
+          <button className="xp-btn mt-3" onClick={onNavigateToCreate}>
+            Create Your First Group
+          </button>
+        </div>
+      ) : (
+        groups.map((group) => {
+          const groupExpenses = expenses[group.groupId] || []
+          const isExpanded = expandedGroup === group.groupId
 
-        {/* Add Expense */}
-        <XpWindow title="Add Expense" showControls={false}>
-          <div className="flex flex-col gap-2">
-            <input className="xp-input" placeholder="Group ID" type="number" value={expGroupId} onChange={(e) => setExpGroupId(e.target.value)} />
-            <input className="xp-input" placeholder="Total Amount (ALGO)" type="number" step="0.001" value={expAmount} onChange={(e) => setExpAmount(e.target.value)} />
-            <input className="xp-input" placeholder="Participant 1 Address" value={expPart1} onChange={(e) => setExpPart1(e.target.value)} />
-            <input className="xp-input" placeholder="Participant 2 (optional)" value={expPart2} onChange={(e) => setExpPart2(e.target.value)} />
-            <input className="xp-input" placeholder="Participant 3 (optional)" value={expPart3} onChange={(e) => setExpPart3(e.target.value)} />
-            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={addExpense}>
-              {loading ? 'Working...' : 'Add Expense'}
-            </button>
-          </div>
-        </XpWindow>
+          return (
+            <XpWindow
+              key={group._id}
+              title={`${group.name} ${!group.active ? '(Closed)' : ''}`}
+              showControls={false}
+            >
+              <div className="flex flex-col gap-3">
+                {/* Members row */}
+                <div className="flex flex-wrap gap-2">
+                  {group.members.map((m) => (
+                    <span
+                      key={m.address}
+                      className="text-xs font-xp-body px-2 py-1 rounded"
+                      style={{
+                        backgroundColor: m.address === activeAddress ? '#316AC5' : '#D4D0C8',
+                        color: m.address === activeAddress ? '#fff' : '#000',
+                      }}
+                      title={m.address}
+                    >
+                      {m.name}
+                    </span>
+                  ))}
+                </div>
 
-        {/* Expense Info */}
-        <XpWindow title="Expense Info" showControls={false}>
-          <div className="flex flex-col gap-2">
-            <input className="xp-input" placeholder="Expense ID" type="number" value={lookupExpId} onChange={(e) => setLookupExpId(e.target.value)} />
-            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={lookupExpense}>
-              {loading ? 'Working...' : 'Lookup'}
-            </button>
-            {expenseInfo && (
-              <div className="text-xs mt-1 space-y-1 font-xp-body">
-                <div>Total: <span className="font-mono">{expenseInfo.amount}</span></div>
-                <div>Share per person: <span className="font-mono">{expenseInfo.share}</span></div>
-                <div>Participants: <span className="font-mono">{expenseInfo.participants}</span></div>
-                <div>Settled: <span className="font-mono">{expenseInfo.settled}</span></div>
+                {/* Expenses list */}
+                {groupExpenses.length > 0 && (
+                  <div
+                    className="flex flex-col gap-2"
+                    style={{ borderTop: '1px solid #808080', paddingTop: '8px' }}
+                  >
+                    <div className="font-xp-body text-xs font-semibold text-gray-600">Expenses</div>
+                    {groupExpenses.map((exp) => {
+                      const allSettled = exp.participants.every((p) => exp.settledBy.includes(p))
+                      const iOwe =
+                        exp.participants.includes(activeAddress!) &&
+                        !exp.settledBy.includes(activeAddress!) &&
+                        exp.payer !== activeAddress
+                      const iPaid = exp.payer === activeAddress
+
+                      return (
+                        <div
+                          key={exp._id}
+                          className="text-xs font-xp-body p-2 rounded"
+                          style={{
+                            backgroundColor: allSettled ? '#E8F5E9' : '#FFF8E1',
+                            border: `1px solid ${allSettled ? '#A5D6A7' : '#FFE082'}`,
+                          }}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="font-bold">
+                                {exp.description || `Expense #${exp.expenseId}`}
+                              </div>
+                              <div className="text-gray-600 mt-1">
+                                <span className="font-semibold">{getMemberName(exp.payer, group)}</span> paid{' '}
+                                <span className="font-mono font-bold">
+                                  {(exp.amount / 1_000_000).toFixed(3)} ALGO
+                                </span>
+                              </div>
+                              <div className="text-gray-500 mt-1">
+                                Split between:{' '}
+                                {exp.participants.map((p, i) => (
+                                  <span key={p}>
+                                    {i > 0 && ', '}
+                                    <span
+                                      style={{
+                                        textDecoration: exp.settledBy.includes(p) ? 'line-through' : 'none',
+                                        color: exp.settledBy.includes(p) ? '#4CAF50' : '#333',
+                                      }}
+                                    >
+                                      {getMemberName(p, group)}
+                                    </span>
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="text-gray-500">
+                                Share: <span className="font-mono">{(exp.sharePerPerson / 1_000_000).toFixed(3)} ALGO</span>
+                                {' | '}
+                                {allSettled ? (
+                                  <span style={{ color: '#4CAF50' }}>All settled</span>
+                                ) : (
+                                  <span style={{ color: '#F57C00' }}>
+                                    {exp.settledBy.length}/{exp.participants.length} settled
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Settle button */}
+                            {iOwe && group.active && (
+                              <button
+                                className="xp-btn text-xs ml-2"
+                                disabled={loadingAction}
+                                onClick={() => settleExpense(exp, group)}
+                              >
+                                {loadingAction ? '...' : `Pay ${(exp.sharePerPerson / 1_000_000).toFixed(3)}`}
+                              </button>
+                            )}
+                            {iPaid && !allSettled && (
+                              <span
+                                className="text-xs font-xp-body ml-2 px-2 py-1"
+                                style={{ backgroundColor: '#E3F2FD', borderRadius: '4px' }}
+                              >
+                                You paid
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                {group.active && (
+                  <div className="flex gap-2" style={{ borderTop: '1px solid #808080', paddingTop: '8px' }}>
+                    <button
+                      className="xp-btn text-xs flex-1"
+                      onClick={() => toggleExpand(group.groupId)}
+                    >
+                      {isExpanded ? 'Cancel' : '+ Add Expense'}
+                    </button>
+                    {group.creator === activeAddress && (
+                      <button
+                        className="xp-btn text-xs"
+                        style={{ color: '#c00' }}
+                        disabled={loadingAction}
+                        onClick={() => closeGroup(group)}
+                      >
+                        Close Group
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Add expense form (expanded) */}
+                {isExpanded && group.active && (
+                  <div
+                    className="flex flex-col gap-2 p-3 rounded"
+                    style={{ backgroundColor: '#F5F5F5', border: '1px solid #ccc' }}
+                  >
+                    <div className="font-xp-body text-xs font-semibold">New Expense</div>
+                    <input
+                      className="xp-input"
+                      placeholder="Description (e.g. Lunch at campus cafe)"
+                      value={expDesc}
+                      onChange={(e) => setExpDesc(e.target.value)}
+                    />
+                    <input
+                      className="xp-input"
+                      placeholder="Total Amount (ALGO)"
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={expAmount}
+                      onChange={(e) => setExpAmount(e.target.value)}
+                    />
+
+                    <div className="font-xp-body text-xs text-gray-600">
+                      Who owes? (select participants, excluding yourself as payer)
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {group.members
+                        .filter((m) => m.address !== activeAddress)
+                        .map((m) => (
+                          <button
+                            key={m.address}
+                            className="text-xs font-xp-body px-2 py-1 rounded cursor-pointer"
+                            style={{
+                              backgroundColor: expParticipants.includes(m.address)
+                                ? '#316AC5'
+                                : '#D4D0C8',
+                              color: expParticipants.includes(m.address) ? '#fff' : '#000',
+                              border: '1px solid #808080',
+                            }}
+                            onClick={() => toggleParticipant(m.address)}
+                          >
+                            {m.name}
+                          </button>
+                        ))}
+                    </div>
+
+                    {expAmount && Number(expAmount) > 0 && expParticipants.length > 0 && (
+                      <div className="text-xs font-xp-body text-gray-600">
+                        Each person pays:{' '}
+                        <span className="font-mono font-bold">
+                          {(Number(expAmount) / expParticipants.length).toFixed(3)} ALGO
+                        </span>
+                      </div>
+                    )}
+
+                    <button
+                      className="xp-btn text-xs"
+                      disabled={loadingAction || !expAmount || expParticipants.length === 0}
+                      onClick={() => addExpense(group)}
+                    >
+                      {loadingAction ? 'Adding...' : 'Add Expense'}
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </XpWindow>
-
-        {/* Settle Expense */}
-        <XpWindow title="Settle Expense" showControls={false}>
-          <div className="flex flex-col gap-2">
-            <input className="xp-input" placeholder="Expense ID" type="number" value={settleExpId} onChange={(e) => setSettleExpId(e.target.value)} />
-            <input className="xp-input" placeholder="Payer Address (who you owe)" value={settlePayerAddr} onChange={(e) => setSettlePayerAddr(e.target.value)} />
-            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={settleExpense}>
-              {loading ? 'Working...' : 'Settle My Share'}
-            </button>
-          </div>
-        </XpWindow>
-
-        {/* Close Group */}
-        <XpWindow title="Close Group" showControls={false}>
-          <div className="flex flex-col gap-2">
-            <input className="xp-input" placeholder="Group ID" type="number" value={closeGroupId} onChange={(e) => setCloseGroupId(e.target.value)} />
-            <button className="xp-btn" disabled={loading || !appId || !activeAddress} onClick={closeGroup}>
-              {loading ? 'Working...' : 'Close Group'}
-            </button>
-          </div>
-        </XpWindow>
-      </div>
+            </XpWindow>
+          )
+        })
+      )}
     </div>
   )
 }

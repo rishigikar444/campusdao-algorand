@@ -7,19 +7,19 @@ main:
     bytecblock "im" 0x151f7c75 "ct" "cm" "pc" "pf" "pg" "pd" "club_count" "proposal_count" "cc" "pa" "pe" "cq" "pr"
     txn ApplicationID
     bnz main_after_if_else@2
-    // smart_contracts/treasury_dao/contract.py:12
+    // smart_contracts/treasury_dao/contract.py:15
     // self.club_count = UInt64(0)
     bytec 8 // "club_count"
     intc_1 // 0
     app_global_put
-    // smart_contracts/treasury_dao/contract.py:13
+    // smart_contracts/treasury_dao/contract.py:16
     // self.proposal_count = UInt64(0)
     bytec 9 // "proposal_count"
     intc_1 // 0
     app_global_put
 
 main_after_if_else@2:
-    // smart_contracts/treasury_dao/contract.py:6
+    // smart_contracts/treasury_dao/contract.py:9
     // class TreasuryDAO(ARC4Contract):
     txn NumAppArgs
     bz main_bare_routing@12
@@ -28,24 +28,24 @@ main_after_if_else@2:
     match main_create_club_route@5 main_deposit_route@6 main_create_proposal_route@7 main_vote_route@8 main_execute_proposal_route@9 main_get_treasury_balance_route@10 main_get_proposal_info_route@11
 
 main_after_if_else@14:
-    // smart_contracts/treasury_dao/contract.py:6
+    // smart_contracts/treasury_dao/contract.py:9
     // class TreasuryDAO(ARC4Contract):
     intc_1 // 0
     return
 
 main_get_proposal_info_route@11:
-    // smart_contracts/treasury_dao/contract.py:221
+    // smart_contracts/treasury_dao/contract.py:224
     // @abimethod()
     txn OnCompletion
     !
     assert // OnCompletion is not NoOp
     txn ApplicationID
     assert // can only call when not creating
-    // smart_contracts/treasury_dao/contract.py:6
+    // smart_contracts/treasury_dao/contract.py:9
     // class TreasuryDAO(ARC4Contract):
     txna ApplicationArgs 1
     btoi
-    // smart_contracts/treasury_dao/contract.py:221
+    // smart_contracts/treasury_dao/contract.py:224
     // @abimethod()
     callsub get_proposal_info
     uncover 4
@@ -75,18 +75,18 @@ main_get_proposal_info_route@11:
     return
 
 main_get_treasury_balance_route@10:
-    // smart_contracts/treasury_dao/contract.py:214
+    // smart_contracts/treasury_dao/contract.py:217
     // @abimethod()
     txn OnCompletion
     !
     assert // OnCompletion is not NoOp
     txn ApplicationID
     assert // can only call when not creating
-    // smart_contracts/treasury_dao/contract.py:6
+    // smart_contracts/treasury_dao/contract.py:9
     // class TreasuryDAO(ARC4Contract):
     txna ApplicationArgs 1
     btoi
-    // smart_contracts/treasury_dao/contract.py:214
+    // smart_contracts/treasury_dao/contract.py:217
     // @abimethod()
     callsub get_treasury_balance
     itob
@@ -98,52 +98,52 @@ main_get_treasury_balance_route@10:
     return
 
 main_execute_proposal_route@9:
-    // smart_contracts/treasury_dao/contract.py:182
+    // smart_contracts/treasury_dao/contract.py:185
     // @abimethod()
     txn OnCompletion
     !
     assert // OnCompletion is not NoOp
     txn ApplicationID
     assert // can only call when not creating
-    // smart_contracts/treasury_dao/contract.py:6
+    // smart_contracts/treasury_dao/contract.py:9
     // class TreasuryDAO(ARC4Contract):
     txna ApplicationArgs 1
     btoi
-    // smart_contracts/treasury_dao/contract.py:182
+    // smart_contracts/treasury_dao/contract.py:185
     // @abimethod()
     callsub execute_proposal
     intc_0 // 1
     return
 
 main_vote_route@8:
-    // smart_contracts/treasury_dao/contract.py:152
+    // smart_contracts/treasury_dao/contract.py:155
     // @abimethod()
     txn OnCompletion
     !
     assert // OnCompletion is not NoOp
     txn ApplicationID
     assert // can only call when not creating
-    // smart_contracts/treasury_dao/contract.py:6
+    // smart_contracts/treasury_dao/contract.py:9
     // class TreasuryDAO(ARC4Contract):
     txna ApplicationArgs 1
     btoi
     txna ApplicationArgs 2
     btoi
-    // smart_contracts/treasury_dao/contract.py:152
+    // smart_contracts/treasury_dao/contract.py:155
     // @abimethod()
     callsub vote
     intc_0 // 1
     return
 
 main_create_proposal_route@7:
-    // smart_contracts/treasury_dao/contract.py:117
+    // smart_contracts/treasury_dao/contract.py:120
     // @abimethod()
     txn OnCompletion
     !
     assert // OnCompletion is not NoOp
     txn ApplicationID
     assert // can only call when not creating
-    // smart_contracts/treasury_dao/contract.py:6
+    // smart_contracts/treasury_dao/contract.py:9
     // class TreasuryDAO(ARC4Contract):
     txna ApplicationArgs 1
     btoi
@@ -164,7 +164,7 @@ main_create_proposal_route@7:
     intc_0 // pay
     ==
     assert // transaction type is pay
-    // smart_contracts/treasury_dao/contract.py:117
+    // smart_contracts/treasury_dao/contract.py:120
     // @abimethod()
     callsub create_proposal
     itob
@@ -176,14 +176,14 @@ main_create_proposal_route@7:
     return
 
 main_deposit_route@6:
-    // smart_contracts/treasury_dao/contract.py:100
+    // smart_contracts/treasury_dao/contract.py:103
     // @abimethod()
     txn OnCompletion
     !
     assert // OnCompletion is not NoOp
     txn ApplicationID
     assert // can only call when not creating
-    // smart_contracts/treasury_dao/contract.py:6
+    // smart_contracts/treasury_dao/contract.py:9
     // class TreasuryDAO(ARC4Contract):
     txna ApplicationArgs 1
     btoi
@@ -195,7 +195,7 @@ main_deposit_route@6:
     intc_0 // pay
     ==
     assert // transaction type is pay
-    // smart_contracts/treasury_dao/contract.py:100
+    // smart_contracts/treasury_dao/contract.py:103
     // @abimethod()
     callsub deposit
     itob
@@ -207,14 +207,14 @@ main_deposit_route@6:
     return
 
 main_create_club_route@5:
-    // smart_contracts/treasury_dao/contract.py:47
+    // smart_contracts/treasury_dao/contract.py:50
     // @abimethod()
     txn OnCompletion
     !
     assert // OnCompletion is not NoOp
     txn ApplicationID
     assert // can only call when not creating
-    // smart_contracts/treasury_dao/contract.py:6
+    // smart_contracts/treasury_dao/contract.py:9
     // class TreasuryDAO(ARC4Contract):
     txna ApplicationArgs 1
     btoi
@@ -235,7 +235,7 @@ main_create_club_route@5:
     intc_0 // pay
     ==
     assert // transaction type is pay
-    // smart_contracts/treasury_dao/contract.py:47
+    // smart_contracts/treasury_dao/contract.py:50
     // @abimethod()
     callsub create_club
     itob
@@ -247,7 +247,7 @@ main_create_club_route@5:
     return
 
 main_bare_routing@12:
-    // smart_contracts/treasury_dao/contract.py:6
+    // smart_contracts/treasury_dao/contract.py:9
     // class TreasuryDAO(ARC4Contract):
     txn OnCompletion
     bnz main_after_if_else@14
@@ -260,7 +260,7 @@ main_bare_routing@12:
 
 // smart_contracts.treasury_dao.contract.TreasuryDAO.create_club(quorum: uint64, member1: bytes, member2: bytes, member3: bytes, mbr_pay: uint64) -> uint64:
 create_club:
-    // smart_contracts/treasury_dao/contract.py:47-55
+    // smart_contracts/treasury_dao/contract.py:50-58
     // @abimethod()
     // def create_club(
     //     self,
@@ -272,18 +272,18 @@ create_club:
     // ) -> UInt64:
     proto 5 1
     pushbytes ""
-    // smart_contracts/treasury_dao/contract.py:59
+    // smart_contracts/treasury_dao/contract.py:62
     // assert mbr_pay.receiver == Global.current_application_address, "MBR payment must go to app"
     frame_dig -1
     gtxns Receiver
     global CurrentApplicationAddress
     ==
     assert // MBR payment must go to app
-    // smart_contracts/treasury_dao/contract.py:60
+    // smart_contracts/treasury_dao/contract.py:63
     // assert quorum > 0, "Quorum must be > 0"
     frame_dig -5
     assert // Quorum must be > 0
-    // smart_contracts/treasury_dao/contract.py:62
+    // smart_contracts/treasury_dao/contract.py:65
     // club_id = self.club_count + UInt64(1)
     intc_1 // 0
     bytec 8 // "club_count"
@@ -292,12 +292,12 @@ create_club:
     intc_0 // 1
     +
     dup
-    // smart_contracts/treasury_dao/contract.py:63
+    // smart_contracts/treasury_dao/contract.py:66
     // self.club_count = club_id
     bytec 8 // "club_count"
     dig 1
     app_global_put
-    // smart_contracts/treasury_dao/contract.py:65
+    // smart_contracts/treasury_dao/contract.py:68
     // self.club_creator[club_id] = Txn.sender
     dup
     itob
@@ -308,7 +308,7 @@ create_club:
     concat
     txn Sender
     box_put
-    // smart_contracts/treasury_dao/contract.py:66
+    // smart_contracts/treasury_dao/contract.py:69
     // self.club_quorum[club_id] = quorum
     bytec 13 // "cq"
     dig 1
@@ -316,7 +316,7 @@ create_club:
     frame_dig -5
     itob
     box_put
-    // smart_contracts/treasury_dao/contract.py:67
+    // smart_contracts/treasury_dao/contract.py:70
     // self.club_treasury[club_id] = UInt64(0)
     bytec_2 // "ct"
     dig 1
@@ -324,14 +324,14 @@ create_club:
     intc_1 // 0
     itob
     box_put
-    // smart_contracts/treasury_dao/contract.py:71
+    // smart_contracts/treasury_dao/contract.py:74
     // key0 = club_id * UInt64(2**16) + member_index
     swap
     pushint 65536 // 65536
     *
     dup
     cover 2
-    // smart_contracts/treasury_dao/contract.py:72
+    // smart_contracts/treasury_dao/contract.py:75
     // self.club_members[key0] = Txn.sender
     itob
     bytec_3 // "cm"
@@ -339,13 +339,13 @@ create_club:
     concat
     txn Sender
     box_put
-    // smart_contracts/treasury_dao/contract.py:73
+    // smart_contracts/treasury_dao/contract.py:76
     // self.is_member[self._member_key(club_id, Txn.sender)] = UInt64(1)
     txn Sender
-    // smart_contracts/treasury_dao/contract.py:41
+    // smart_contracts/treasury_dao/contract.py:44
     // return op.concat(op.itob(club_id), account.bytes)
     concat
-    // smart_contracts/treasury_dao/contract.py:73
+    // smart_contracts/treasury_dao/contract.py:76
     // self.is_member[self._member_key(club_id, Txn.sender)] = UInt64(1)
     bytec_0 // "im"
     swap
@@ -355,26 +355,26 @@ create_club:
     dup
     cover 2
     box_put
-    // smart_contracts/treasury_dao/contract.py:74
+    // smart_contracts/treasury_dao/contract.py:77
     // member_index += UInt64(1)
     intc_0 // 1
-    // smart_contracts/treasury_dao/contract.py:76-77
+    // smart_contracts/treasury_dao/contract.py:79-80
     // # Add additional members if they are not zero address and not duplicates
     // if member1 != Global.zero_address:
     frame_dig -4
     global ZeroAddress
     !=
     bz create_club_after_if_else@2
-    // smart_contracts/treasury_dao/contract.py:78
+    // smart_contracts/treasury_dao/contract.py:81
     // key1 = club_id * UInt64(2**16) + member_index
     frame_dig 3
-    // smart_contracts/treasury_dao/contract.py:74
+    // smart_contracts/treasury_dao/contract.py:77
     // member_index += UInt64(1)
     intc_0 // 1
-    // smart_contracts/treasury_dao/contract.py:78
+    // smart_contracts/treasury_dao/contract.py:81
     // key1 = club_id * UInt64(2**16) + member_index
     +
-    // smart_contracts/treasury_dao/contract.py:79
+    // smart_contracts/treasury_dao/contract.py:82
     // self.club_members[key1] = member1
     itob
     bytec_3 // "cm"
@@ -382,25 +382,25 @@ create_club:
     concat
     frame_dig -4
     box_put
-    // smart_contracts/treasury_dao/contract.py:41
+    // smart_contracts/treasury_dao/contract.py:44
     // return op.concat(op.itob(club_id), account.bytes)
     frame_dig 2
     frame_dig -4
     concat
-    // smart_contracts/treasury_dao/contract.py:80
+    // smart_contracts/treasury_dao/contract.py:83
     // self.is_member[self._member_key(club_id, member1)] = UInt64(1)
     bytec_0 // "im"
     swap
     concat
     frame_dig 4
     box_put
-    // smart_contracts/treasury_dao/contract.py:81
+    // smart_contracts/treasury_dao/contract.py:84
     // member_index += UInt64(1)
     pushint 2 // 2
     frame_bury 5
 
 create_club_after_if_else@2:
-    // smart_contracts/treasury_dao/contract.py:83
+    // smart_contracts/treasury_dao/contract.py:86
     // if member2 != Global.zero_address:
     frame_dig -3
     global ZeroAddress
@@ -408,14 +408,14 @@ create_club_after_if_else@2:
     frame_dig 5
     frame_bury 0
     bz create_club_after_if_else@4
-    // smart_contracts/treasury_dao/contract.py:84
+    // smart_contracts/treasury_dao/contract.py:87
     // key2 = club_id * UInt64(2**16) + member_index
     frame_dig 3
     frame_dig 5
     dup
     cover 2
     +
-    // smart_contracts/treasury_dao/contract.py:85
+    // smart_contracts/treasury_dao/contract.py:88
     // self.club_members[key2] = member2
     itob
     bytec_3 // "cm"
@@ -423,19 +423,19 @@ create_club_after_if_else@2:
     concat
     frame_dig -3
     box_put
-    // smart_contracts/treasury_dao/contract.py:41
+    // smart_contracts/treasury_dao/contract.py:44
     // return op.concat(op.itob(club_id), account.bytes)
     frame_dig 2
     frame_dig -3
     concat
-    // smart_contracts/treasury_dao/contract.py:86
+    // smart_contracts/treasury_dao/contract.py:89
     // self.is_member[self._member_key(club_id, member2)] = UInt64(1)
     bytec_0 // "im"
     swap
     concat
     frame_dig 4
     box_put
-    // smart_contracts/treasury_dao/contract.py:87
+    // smart_contracts/treasury_dao/contract.py:90
     // member_index += UInt64(1)
     intc_0 // 1
     +
@@ -445,7 +445,7 @@ create_club_after_if_else@4:
     frame_dig 0
     dup
     frame_bury 5
-    // smart_contracts/treasury_dao/contract.py:89
+    // smart_contracts/treasury_dao/contract.py:92
     // if member3 != Global.zero_address:
     frame_dig -2
     global ZeroAddress
@@ -453,14 +453,14 @@ create_club_after_if_else@4:
     swap
     frame_bury 0
     bz create_club_after_if_else@6
-    // smart_contracts/treasury_dao/contract.py:90
+    // smart_contracts/treasury_dao/contract.py:93
     // key3 = club_id * UInt64(2**16) + member_index
     frame_dig 3
     frame_dig 5
     dup
     cover 2
     +
-    // smart_contracts/treasury_dao/contract.py:91
+    // smart_contracts/treasury_dao/contract.py:94
     // self.club_members[key3] = member3
     itob
     bytec_3 // "cm"
@@ -468,19 +468,19 @@ create_club_after_if_else@4:
     concat
     frame_dig -2
     box_put
-    // smart_contracts/treasury_dao/contract.py:41
+    // smart_contracts/treasury_dao/contract.py:44
     // return op.concat(op.itob(club_id), account.bytes)
     frame_dig 2
     frame_dig -2
     concat
-    // smart_contracts/treasury_dao/contract.py:92
+    // smart_contracts/treasury_dao/contract.py:95
     // self.is_member[self._member_key(club_id, member3)] = UInt64(1)
     bytec_0 // "im"
     swap
     concat
     frame_dig 4
     box_put
-    // smart_contracts/treasury_dao/contract.py:93
+    // smart_contracts/treasury_dao/contract.py:96
     // member_index += UInt64(1)
     intc_0 // 1
     +
@@ -488,7 +488,7 @@ create_club_after_if_else@4:
 
 create_club_after_if_else@6:
     frame_dig 0
-    // smart_contracts/treasury_dao/contract.py:95
+    // smart_contracts/treasury_dao/contract.py:98
     // self.club_member_count[club_id] = member_index
     pushbytes "cn"
     frame_dig 2
@@ -496,12 +496,12 @@ create_club_after_if_else@6:
     dig 1
     itob
     box_put
-    // smart_contracts/treasury_dao/contract.py:96
+    // smart_contracts/treasury_dao/contract.py:99
     // assert quorum <= member_index, "Quorum cannot exceed member count"
     frame_dig -5
     >=
     assert // Quorum cannot exceed member count
-    // smart_contracts/treasury_dao/contract.py:98
+    // smart_contracts/treasury_dao/contract.py:101
     // return club_id
     frame_dig 1
     frame_bury 0
@@ -510,7 +510,7 @@ create_club_after_if_else@6:
 
 // smart_contracts.treasury_dao.contract.TreasuryDAO.deposit(club_id: uint64, pay_txn: uint64) -> uint64:
 deposit:
-    // smart_contracts/treasury_dao/contract.py:100-105
+    // smart_contracts/treasury_dao/contract.py:103-108
     // @abimethod()
     // def deposit(
     //     self,
@@ -518,7 +518,7 @@ deposit:
     //     pay_txn: gtxn.PaymentTransaction,
     // ) -> UInt64:
     proto 2 1
-    // smart_contracts/treasury_dao/contract.py:107
+    // smart_contracts/treasury_dao/contract.py:110
     // creator_val, exists = self.club_creator.maybe(club_id)
     frame_dig -2
     itob
@@ -527,23 +527,23 @@ deposit:
     concat
     box_get
     bury 1
-    // smart_contracts/treasury_dao/contract.py:108
+    // smart_contracts/treasury_dao/contract.py:111
     // assert exists, "Club does not exist"
     assert // Club does not exist
-    // smart_contracts/treasury_dao/contract.py:109
+    // smart_contracts/treasury_dao/contract.py:112
     // assert pay_txn.receiver == Global.current_application_address, "Payment must go to app"
     frame_dig -1
     gtxns Receiver
     global CurrentApplicationAddress
     ==
     assert // Payment must go to app
-    // smart_contracts/treasury_dao/contract.py:110
+    // smart_contracts/treasury_dao/contract.py:113
     // assert pay_txn.amount > 0, "Deposit must be > 0"
     frame_dig -1
     gtxns Amount
     dup
     assert // Deposit must be > 0
-    // smart_contracts/treasury_dao/contract.py:112
+    // smart_contracts/treasury_dao/contract.py:115
     // current = self.club_treasury[club_id]
     bytec_2 // "ct"
     uncover 2
@@ -554,7 +554,7 @@ deposit:
     btoi
     swap
     assert // check self.club_treasury entry exists
-    // smart_contracts/treasury_dao/contract.py:113
+    // smart_contracts/treasury_dao/contract.py:116
     // self.club_treasury[club_id] = current + pay_txn.amount
     uncover 2
     +
@@ -562,7 +562,7 @@ deposit:
     dig 1
     swap
     box_put
-    // smart_contracts/treasury_dao/contract.py:115
+    // smart_contracts/treasury_dao/contract.py:118
     // return self.club_treasury[club_id]
     box_get
     swap
@@ -574,7 +574,7 @@ deposit:
 
 // smart_contracts.treasury_dao.contract.TreasuryDAO.create_proposal(club_id: uint64, amount: uint64, recipient: bytes, deadline_round: uint64, metadata_hash: bytes, mbr_pay: uint64) -> uint64:
 create_proposal:
-    // smart_contracts/treasury_dao/contract.py:117-126
+    // smart_contracts/treasury_dao/contract.py:120-129
     // @abimethod()
     // def create_proposal(
     //     self,
@@ -586,25 +586,25 @@ create_proposal:
     //     mbr_pay: gtxn.PaymentTransaction,
     // ) -> UInt64:
     proto 6 1
-    // smart_contracts/treasury_dao/contract.py:129
+    // smart_contracts/treasury_dao/contract.py:132
     // assert mbr_pay.receiver == Global.current_application_address, "MBR payment must go to app"
     frame_dig -1
     gtxns Receiver
     global CurrentApplicationAddress
     ==
     assert // MBR payment must go to app
-    // smart_contracts/treasury_dao/contract.py:131-132
+    // smart_contracts/treasury_dao/contract.py:134-135
     // # Verify caller is a member
     // mem_val, is_mem = self.is_member.maybe(self._member_key(club_id, Txn.sender))
     txn Sender
-    // smart_contracts/treasury_dao/contract.py:41
+    // smart_contracts/treasury_dao/contract.py:44
     // return op.concat(op.itob(club_id), account.bytes)
     frame_dig -6
     itob
     dup
     uncover 2
     concat
-    // smart_contracts/treasury_dao/contract.py:131-132
+    // smart_contracts/treasury_dao/contract.py:134-135
     // # Verify caller is a member
     // mem_val, is_mem = self.is_member.maybe(self._member_key(club_id, Txn.sender))
     bytec_0 // "im"
@@ -612,20 +612,20 @@ create_proposal:
     concat
     box_get
     bury 1
-    // smart_contracts/treasury_dao/contract.py:133
+    // smart_contracts/treasury_dao/contract.py:136
     // assert is_mem, "Only club members can create proposals"
     assert // Only club members can create proposals
-    // smart_contracts/treasury_dao/contract.py:135
+    // smart_contracts/treasury_dao/contract.py:138
     // assert amount > 0, "Proposal amount must be > 0"
     frame_dig -5
     assert // Proposal amount must be > 0
-    // smart_contracts/treasury_dao/contract.py:136
+    // smart_contracts/treasury_dao/contract.py:139
     // assert deadline_round > Global.round, "Deadline must be in the future"
     frame_dig -3
     global Round
     >
     assert // Deadline must be in the future
-    // smart_contracts/treasury_dao/contract.py:138
+    // smart_contracts/treasury_dao/contract.py:141
     // proposal_id = self.proposal_count + UInt64(1)
     intc_1 // 0
     bytec 9 // "proposal_count"
@@ -633,12 +633,12 @@ create_proposal:
     assert // check self.proposal_count exists
     intc_0 // 1
     +
-    // smart_contracts/treasury_dao/contract.py:139
+    // smart_contracts/treasury_dao/contract.py:142
     // self.proposal_count = proposal_id
     bytec 9 // "proposal_count"
     dig 1
     app_global_put
-    // smart_contracts/treasury_dao/contract.py:141
+    // smart_contracts/treasury_dao/contract.py:144
     // self.proposal_club[proposal_id] = club_id
     dup
     itob
@@ -647,7 +647,7 @@ create_proposal:
     concat
     uncover 3
     box_put
-    // smart_contracts/treasury_dao/contract.py:142
+    // smart_contracts/treasury_dao/contract.py:145
     // self.proposal_amount[proposal_id] = amount
     bytec 11 // "pa"
     dig 1
@@ -655,14 +655,14 @@ create_proposal:
     frame_dig -5
     itob
     box_put
-    // smart_contracts/treasury_dao/contract.py:143
+    // smart_contracts/treasury_dao/contract.py:146
     // self.proposal_recipient[proposal_id] = recipient
     bytec 14 // "pr"
     dig 1
     concat
     frame_dig -4
     box_put
-    // smart_contracts/treasury_dao/contract.py:144
+    // smart_contracts/treasury_dao/contract.py:147
     // self.proposal_votes_for[proposal_id] = UInt64(0)
     bytec 5 // "pf"
     dig 1
@@ -672,14 +672,14 @@ create_proposal:
     swap
     dig 1
     box_put
-    // smart_contracts/treasury_dao/contract.py:145
+    // smart_contracts/treasury_dao/contract.py:148
     // self.proposal_votes_against[proposal_id] = UInt64(0)
     bytec 6 // "pg"
     dig 2
     concat
     dig 1
     box_put
-    // smart_contracts/treasury_dao/contract.py:146
+    // smart_contracts/treasury_dao/contract.py:149
     // self.proposal_deadline[proposal_id] = deadline_round
     bytec 7 // "pd"
     dig 2
@@ -687,14 +687,14 @@ create_proposal:
     frame_dig -3
     itob
     box_put
-    // smart_contracts/treasury_dao/contract.py:147
+    // smart_contracts/treasury_dao/contract.py:150
     // self.proposal_executed[proposal_id] = UInt64(0)
     bytec 12 // "pe"
     dig 2
     concat
     swap
     box_put
-    // smart_contracts/treasury_dao/contract.py:148
+    // smart_contracts/treasury_dao/contract.py:151
     // self.proposal_metadata[proposal_id] = metadata_hash
     pushbytes "pm"
     swap
@@ -704,14 +704,14 @@ create_proposal:
     pop
     frame_dig -2
     box_put
-    // smart_contracts/treasury_dao/contract.py:150
+    // smart_contracts/treasury_dao/contract.py:153
     // return proposal_id
     retsub
 
 
 // smart_contracts.treasury_dao.contract.TreasuryDAO.vote(proposal_id: uint64, support: uint64) -> void:
 vote:
-    // smart_contracts/treasury_dao/contract.py:152-157
+    // smart_contracts/treasury_dao/contract.py:155-160
     // @abimethod()
     // def vote(
     //     self,
@@ -719,7 +719,7 @@ vote:
     //     support: UInt64,
     // ) -> None:
     proto 2 0
-    // smart_contracts/treasury_dao/contract.py:160
+    // smart_contracts/treasury_dao/contract.py:163
     // club_id = self.proposal_club[proposal_id]
     frame_dig -2
     itob
@@ -732,17 +732,17 @@ vote:
     btoi
     swap
     assert // check self.proposal_club entry exists
-    // smart_contracts/treasury_dao/contract.py:162-163
+    // smart_contracts/treasury_dao/contract.py:165-166
     // # Verify caller is a member of the club
     // mem_val2, is_mem = self.is_member.maybe(self._member_key(club_id, Txn.sender))
     txn Sender
-    // smart_contracts/treasury_dao/contract.py:41
+    // smart_contracts/treasury_dao/contract.py:44
     // return op.concat(op.itob(club_id), account.bytes)
     swap
     itob
     swap
     concat
-    // smart_contracts/treasury_dao/contract.py:162-163
+    // smart_contracts/treasury_dao/contract.py:165-166
     // # Verify caller is a member of the club
     // mem_val2, is_mem = self.is_member.maybe(self._member_key(club_id, Txn.sender))
     bytec_0 // "im"
@@ -750,20 +750,20 @@ vote:
     concat
     box_get
     bury 1
-    // smart_contracts/treasury_dao/contract.py:164
+    // smart_contracts/treasury_dao/contract.py:167
     // assert is_mem, "Only club members can vote"
     assert // Only club members can vote
-    // smart_contracts/treasury_dao/contract.py:45
+    // smart_contracts/treasury_dao/contract.py:48
     // return op.concat(op.itob(proposal_id), voter.bytes)
     dup
-    // smart_contracts/treasury_dao/contract.py:166-167
+    // smart_contracts/treasury_dao/contract.py:169-170
     // # Check not already voted
     // vote_key = self._vote_key(proposal_id, Txn.sender)
     txn Sender
-    // smart_contracts/treasury_dao/contract.py:45
+    // smart_contracts/treasury_dao/contract.py:48
     // return op.concat(op.itob(proposal_id), voter.bytes)
     concat
-    // smart_contracts/treasury_dao/contract.py:168
+    // smart_contracts/treasury_dao/contract.py:171
     // vote_val, already_voted = self.has_voted.maybe(vote_key)
     pushbytes "hv"
     swap
@@ -771,11 +771,11 @@ vote:
     dup
     box_get
     bury 1
-    // smart_contracts/treasury_dao/contract.py:169
+    // smart_contracts/treasury_dao/contract.py:172
     // assert not already_voted, "Already voted on this proposal"
     !
     assert // Already voted on this proposal
-    // smart_contracts/treasury_dao/contract.py:171-172
+    // smart_contracts/treasury_dao/contract.py:174-175
     // # Check deadline not passed
     // assert Global.round <= self.proposal_deadline[proposal_id], "Voting period has ended"
     global Round
@@ -789,19 +789,19 @@ vote:
     assert // check self.proposal_deadline entry exists
     <=
     assert // Voting period has ended
-    // smart_contracts/treasury_dao/contract.py:174-175
+    // smart_contracts/treasury_dao/contract.py:177-178
     // # Record vote
     // self.has_voted[vote_key] = UInt64(1)
     intc_0 // 1
     itob
     box_put
-    // smart_contracts/treasury_dao/contract.py:177
+    // smart_contracts/treasury_dao/contract.py:180
     // if support == UInt64(1):
     frame_dig -1
     intc_0 // 1
     ==
     bz vote_else_body@2
-    // smart_contracts/treasury_dao/contract.py:178
+    // smart_contracts/treasury_dao/contract.py:181
     // self.proposal_votes_for[proposal_id] = self.proposal_votes_for[proposal_id] + UInt64(1)
     bytec 5 // "pf"
     swap
@@ -819,7 +819,7 @@ vote:
     retsub
 
 vote_else_body@2:
-    // smart_contracts/treasury_dao/contract.py:180
+    // smart_contracts/treasury_dao/contract.py:183
     // self.proposal_votes_against[proposal_id] = self.proposal_votes_against[proposal_id] + UInt64(1)
     bytec 6 // "pg"
     swap
@@ -839,11 +839,11 @@ vote_else_body@2:
 
 // smart_contracts.treasury_dao.contract.TreasuryDAO.execute_proposal(proposal_id: uint64) -> void:
 execute_proposal:
-    // smart_contracts/treasury_dao/contract.py:182-183
+    // smart_contracts/treasury_dao/contract.py:185-186
     // @abimethod()
     // def execute_proposal(self, proposal_id: UInt64) -> None:
     proto 1 0
-    // smart_contracts/treasury_dao/contract.py:186
+    // smart_contracts/treasury_dao/contract.py:189
     // club_id = self.proposal_club[proposal_id]
     frame_dig -1
     itob
@@ -855,7 +855,7 @@ execute_proposal:
     btoi
     swap
     assert // check self.proposal_club entry exists
-    // smart_contracts/treasury_dao/contract.py:188-189
+    // smart_contracts/treasury_dao/contract.py:191-192
     // # Must not already be executed
     // assert self.proposal_executed[proposal_id] == UInt64(0), "Proposal already executed"
     bytec 12 // "pe"
@@ -869,7 +869,7 @@ execute_proposal:
     assert // check self.proposal_executed entry exists
     !
     assert // Proposal already executed
-    // smart_contracts/treasury_dao/contract.py:191-192
+    // smart_contracts/treasury_dao/contract.py:194-195
     // # Deadline must have passed
     // assert Global.round > self.proposal_deadline[proposal_id], "Voting period not over"
     global Round
@@ -883,7 +883,7 @@ execute_proposal:
     assert // check self.proposal_deadline entry exists
     >
     assert // Voting period not over
-    // smart_contracts/treasury_dao/contract.py:194-195
+    // smart_contracts/treasury_dao/contract.py:197-198
     // # Quorum check: votes_for >= quorum
     // quorum = self.club_quorum[club_id]
     swap
@@ -896,7 +896,7 @@ execute_proposal:
     btoi
     swap
     assert // check self.club_quorum entry exists
-    // smart_contracts/treasury_dao/contract.py:196
+    // smart_contracts/treasury_dao/contract.py:199
     // assert self.proposal_votes_for[proposal_id] >= quorum, "Quorum not reached"
     bytec 5 // "pf"
     dig 4
@@ -910,7 +910,7 @@ execute_proposal:
     uncover 2
     >=
     assert // Quorum not reached
-    // smart_contracts/treasury_dao/contract.py:198-199
+    // smart_contracts/treasury_dao/contract.py:201-202
     // # Must have more for than against
     // assert self.proposal_votes_for[proposal_id] > self.proposal_votes_against[proposal_id], "Proposal not approved"
     box_get
@@ -928,7 +928,7 @@ execute_proposal:
     assert // check self.proposal_votes_against entry exists
     >
     assert // Proposal not approved
-    // smart_contracts/treasury_dao/contract.py:201-202
+    // smart_contracts/treasury_dao/contract.py:204-205
     // # Check treasury has enough
     // amount = self.proposal_amount[proposal_id]
     bytec 11 // "pa"
@@ -939,7 +939,7 @@ execute_proposal:
     btoi
     swap
     assert // check self.proposal_amount entry exists
-    // smart_contracts/treasury_dao/contract.py:203
+    // smart_contracts/treasury_dao/contract.py:206
     // treasury = self.club_treasury[club_id]
     bytec_2 // "ct"
     uncover 2
@@ -950,13 +950,13 @@ execute_proposal:
     btoi
     swap
     assert // check self.club_treasury entry exists
-    // smart_contracts/treasury_dao/contract.py:204
+    // smart_contracts/treasury_dao/contract.py:207
     // assert treasury >= amount, "Insufficient treasury balance"
     dup
     dig 3
     >=
     assert // Insufficient treasury balance
-    // smart_contracts/treasury_dao/contract.py:206-207
+    // smart_contracts/treasury_dao/contract.py:209-210
     // # Execute payment
     // recipient = self.proposal_recipient[proposal_id]
     bytec 14 // "pr"
@@ -964,7 +964,7 @@ execute_proposal:
     concat
     box_get
     assert // check self.proposal_recipient entry exists
-    // smart_contracts/treasury_dao/contract.py:208
+    // smart_contracts/treasury_dao/contract.py:211
     // itxn.Payment(receiver=recipient, amount=amount, fee=0).submit()
     itxn_begin
     dig 3
@@ -975,14 +975,14 @@ execute_proposal:
     intc_1 // 0
     itxn_field Fee
     itxn_submit
-    // smart_contracts/treasury_dao/contract.py:210-211
+    // smart_contracts/treasury_dao/contract.py:213-214
     // # Update state
     // self.club_treasury[club_id] = treasury - amount
     uncover 2
     -
     itob
     box_put
-    // smart_contracts/treasury_dao/contract.py:212
+    // smart_contracts/treasury_dao/contract.py:215
     // self.proposal_executed[proposal_id] = UInt64(1)
     intc_0 // 1
     itob
@@ -992,11 +992,11 @@ execute_proposal:
 
 // smart_contracts.treasury_dao.contract.TreasuryDAO.get_treasury_balance(club_id: uint64) -> uint64:
 get_treasury_balance:
-    // smart_contracts/treasury_dao/contract.py:214-215
+    // smart_contracts/treasury_dao/contract.py:217-218
     // @abimethod()
     // def get_treasury_balance(self, club_id: UInt64) -> UInt64:
     proto 1 1
-    // smart_contracts/treasury_dao/contract.py:217
+    // smart_contracts/treasury_dao/contract.py:220
     // creator_val2, exists = self.club_creator.maybe(club_id)
     frame_dig -1
     itob
@@ -1005,10 +1005,10 @@ get_treasury_balance:
     concat
     box_get
     bury 1
-    // smart_contracts/treasury_dao/contract.py:218
+    // smart_contracts/treasury_dao/contract.py:221
     // assert exists, "Club does not exist"
     assert // Club does not exist
-    // smart_contracts/treasury_dao/contract.py:219
+    // smart_contracts/treasury_dao/contract.py:222
     // return self.club_treasury[club_id]
     bytec_2 // "ct"
     swap
@@ -1023,11 +1023,11 @@ get_treasury_balance:
 
 // smart_contracts.treasury_dao.contract.TreasuryDAO.get_proposal_info(proposal_id: uint64) -> uint64, uint64, uint64, uint64, uint64:
 get_proposal_info:
-    // smart_contracts/treasury_dao/contract.py:221-222
+    // smart_contracts/treasury_dao/contract.py:224-225
     // @abimethod()
     // def get_proposal_info(self, proposal_id: UInt64) -> tuple[UInt64, UInt64, UInt64, UInt64, UInt64]:
     proto 1 5
-    // smart_contracts/treasury_dao/contract.py:224
+    // smart_contracts/treasury_dao/contract.py:227
     // club_val, exists = self.proposal_club.maybe(proposal_id)
     frame_dig -1
     itob
@@ -1036,10 +1036,10 @@ get_proposal_info:
     concat
     box_get
     bury 1
-    // smart_contracts/treasury_dao/contract.py:225
+    // smart_contracts/treasury_dao/contract.py:228
     // assert exists, "Proposal does not exist"
     assert // Proposal does not exist
-    // smart_contracts/treasury_dao/contract.py:228
+    // smart_contracts/treasury_dao/contract.py:231
     // self.proposal_amount[proposal_id],
     bytec 11 // "pa"
     dig 1
@@ -1049,7 +1049,7 @@ get_proposal_info:
     btoi
     swap
     assert // check self.proposal_amount entry exists
-    // smart_contracts/treasury_dao/contract.py:229
+    // smart_contracts/treasury_dao/contract.py:232
     // self.proposal_votes_for[proposal_id],
     bytec 5 // "pf"
     dig 2
@@ -1059,7 +1059,7 @@ get_proposal_info:
     btoi
     swap
     assert // check self.proposal_votes_for entry exists
-    // smart_contracts/treasury_dao/contract.py:230
+    // smart_contracts/treasury_dao/contract.py:233
     // self.proposal_votes_against[proposal_id],
     bytec 6 // "pg"
     dig 3
@@ -1069,7 +1069,7 @@ get_proposal_info:
     btoi
     swap
     assert // check self.proposal_votes_against entry exists
-    // smart_contracts/treasury_dao/contract.py:231
+    // smart_contracts/treasury_dao/contract.py:234
     // self.proposal_deadline[proposal_id],
     bytec 7 // "pd"
     dig 4
@@ -1079,7 +1079,7 @@ get_proposal_info:
     btoi
     swap
     assert // check self.proposal_deadline entry exists
-    // smart_contracts/treasury_dao/contract.py:232
+    // smart_contracts/treasury_dao/contract.py:235
     // self.proposal_executed[proposal_id],
     bytec 12 // "pe"
     uncover 5
@@ -1089,7 +1089,7 @@ get_proposal_info:
     btoi
     swap
     assert // check self.proposal_executed entry exists
-    // smart_contracts/treasury_dao/contract.py:227-233
+    // smart_contracts/treasury_dao/contract.py:230-236
     // return (
     //     self.proposal_amount[proposal_id],
     //     self.proposal_votes_for[proposal_id],

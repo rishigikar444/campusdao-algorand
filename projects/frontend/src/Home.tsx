@@ -3,26 +3,26 @@ import { useState, useEffect } from 'react'
 import ConnectWallet from './components/ConnectWallet'
 import EventsTab from './components/EventsTab'
 import CreateEventTab from './components/CreateEventTab'
-import TreasuryTab from './components/TreasuryTab'
 import SplitwiseTab from './components/SplitwiseTab'
 import MarketsTab from './components/MarketsTab'
 import CreateMarketTab from './components/CreateMarketTab'
+import CreateGroupTab from './components/CreateGroupTab'
 import XpWindow from './components/XpWindow'
 import { ellipseAddress } from './utils/ellipseAddress'
 
-type Tab = 'events' | 'createEvent' | 'treasury' | 'splitwise' | 'markets' | 'createMarket'
+type Tab = 'events' | 'createEvent' | 'splitwise' | 'createGroup' | 'markets' | 'createMarket'
 
 const TAB_LABELS: Record<Tab, string> = {
   events: 'Events',
   createEvent: 'Create Event',
-  treasury: 'Treasury',
   splitwise: 'Splitwise',
+  createGroup: 'Create Group',
   markets: 'Markets',
   createMarket: 'Create Market',
 }
 
 // Tabs visible in the tab strip (createEvent/createMarket are navigated to, not shown in strip)
-const VISIBLE_TABS: Tab[] = ['events', 'treasury', 'splitwise', 'markets']
+const VISIBLE_TABS: Tab[] = ['events', 'splitwise', 'markets']
 
 const Home = () => {
   const [openWalletModal, setOpenWalletModal] = useState(false)
@@ -59,6 +59,12 @@ const Home = () => {
                 {TAB_LABELS.createEvent}
               </button>
             )}
+            {/* Show Create Group tab only when active */}
+            {activeTab === 'createGroup' && (
+              <button className="xp-tab-active">
+                {TAB_LABELS.createGroup}
+              </button>
+            )}
             {/* Show Create Market tab only when active */}
             {activeTab === 'createMarket' && (
               <button className="xp-tab-active">
@@ -86,8 +92,12 @@ const Home = () => {
                 {activeTab === 'createEvent' && (
                   <CreateEventTab onBack={() => setActiveTab('events')} />
                 )}
-                {activeTab === 'treasury' && <TreasuryTab />}
-                {activeTab === 'splitwise' && <SplitwiseTab />}
+                {activeTab === 'splitwise' && (
+                  <SplitwiseTab onNavigateToCreate={() => setActiveTab('createGroup')} />
+                )}
+                {activeTab === 'createGroup' && (
+                  <CreateGroupTab onBack={() => setActiveTab('splitwise')} />
+                )}
                 {activeTab === 'markets' && (
                   <MarketsTab onNavigateToCreate={() => setActiveTab('createMarket')} />
                 )}

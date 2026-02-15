@@ -37,6 +37,12 @@ class Splitwise(ARC4Contract):
         # Count of settlements per expense
         self.expense_settled_count = BoxMap(UInt64, UInt64, key_prefix="sc")
 
+    # ── No-op pad for extra box-ref capacity in atomic groups ──
+
+    @abimethod()
+    def pad(self) -> None:
+        pass
+
     @subroutine
     def _group_member_key(self, group_id: UInt64, account: Account) -> Bytes:
         return op.concat(op.itob(group_id), account.bytes)

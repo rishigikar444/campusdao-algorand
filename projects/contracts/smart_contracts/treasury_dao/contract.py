@@ -1,3 +1,6 @@
+# DEPRECATED: This contract is no longer used in the frontend.
+# Kept for reference only.
+
 from algopy import *
 from algopy.arc4 import abimethod
 from algopy import subroutine
