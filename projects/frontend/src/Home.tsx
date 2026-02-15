@@ -7,10 +7,13 @@ import SplitwiseTab from './components/SplitwiseTab'
 import MarketsTab from './components/MarketsTab'
 import CreateMarketTab from './components/CreateMarketTab'
 import CreateGroupTab from './components/CreateGroupTab'
+import ResolveMarketTab from './components/ResolveMarketTab'
+import LaunchpadTab from './components/LaunchpadTab'
+import CreateProjectTab from './components/CreateProjectTab'
 import XpWindow from './components/XpWindow'
 import { ellipseAddress } from './utils/ellipseAddress'
 
-type Tab = 'events' | 'createEvent' | 'splitwise' | 'createGroup' | 'markets' | 'createMarket'
+type Tab = 'events' | 'createEvent' | 'splitwise' | 'createGroup' | 'markets' | 'createMarket' | 'resolveMarket' | 'launchpad' | 'createProject'
 
 const TAB_LABELS: Record<Tab, string> = {
   events: 'Events',
@@ -19,10 +22,13 @@ const TAB_LABELS: Record<Tab, string> = {
   createGroup: 'Create Group',
   markets: 'Markets',
   createMarket: 'Create Market',
+  resolveMarket: 'Resolve Market',
+  launchpad: 'Launchpad',
+  createProject: 'Launch Project',
 }
 
 // Tabs visible in the tab strip (createEvent/createMarket are navigated to, not shown in strip)
-const VISIBLE_TABS: Tab[] = ['events', 'splitwise', 'markets']
+const VISIBLE_TABS: Tab[] = ['events', 'splitwise', 'markets', 'launchpad']
 
 const Home = () => {
   const [openWalletModal, setOpenWalletModal] = useState(false)
@@ -71,6 +77,18 @@ const Home = () => {
                 {TAB_LABELS.createMarket}
               </button>
             )}
+            {/* Show Resolve Market tab only when active */}
+            {activeTab === 'resolveMarket' && (
+              <button className="xp-tab-active">
+                {TAB_LABELS.resolveMarket}
+              </button>
+            )}
+            {/* Show Create Project tab only when active */}
+            {activeTab === 'createProject' && (
+              <button className="xp-tab-active">
+                {TAB_LABELS.createProject}
+              </button>
+            )}
           </div>
 
           {/* Tab Content */}
@@ -99,10 +117,22 @@ const Home = () => {
                   <CreateGroupTab onBack={() => setActiveTab('splitwise')} />
                 )}
                 {activeTab === 'markets' && (
-                  <MarketsTab onNavigateToCreate={() => setActiveTab('createMarket')} />
+                  <MarketsTab
+                    onNavigateToCreate={() => setActiveTab('createMarket')}
+                    onNavigateToResolve={() => setActiveTab('resolveMarket')}
+                  />
                 )}
                 {activeTab === 'createMarket' && (
                   <CreateMarketTab onBack={() => setActiveTab('markets')} />
+                )}
+                {activeTab === 'resolveMarket' && (
+                  <ResolveMarketTab onBack={() => setActiveTab('markets')} />
+                )}
+                {activeTab === 'launchpad' && (
+                  <LaunchpadTab onNavigateToCreate={() => setActiveTab('createProject')} />
+                )}
+                {activeTab === 'createProject' && (
+                  <CreateProjectTab onBack={() => setActiveTab('launchpad')} />
                 )}
               </>
             )}

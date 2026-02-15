@@ -225,18 +225,20 @@ const CreateMarketTab = ({ onBack }: CreateMarketTabProps) => {
             <div className="text-xs font-xp-body text-gray-500">
               Checking for existing contract...
             </div>
-          ) : appId ? (
-            <div className="text-xs font-xp-body text-gray-500">
-              Using PredictionMarket contract: <span className="font-mono font-bold">{appId}</span>
-            </div>
           ) : (
             <div
               className="flex flex-col gap-2 pb-3"
               style={{ borderBottom: '1px solid #808080' }}
             >
-              <p className="text-xs text-gray-500 font-xp-body">
-                No contract found. Deploy a new one or enter an existing App ID:
-              </p>
+              {appId ? (
+                <p className="text-xs text-gray-500 font-xp-body">
+                  Using PredictionMarket contract: <span className="font-mono font-bold">{appId}</span>
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500 font-xp-body">
+                  No contract found. Deploy a new one or enter an existing App ID:
+                </p>
+              )}
               <div className="flex gap-2">
                 <input
                   className="xp-input flex-1"
@@ -249,7 +251,7 @@ const CreateMarketTab = ({ onBack }: CreateMarketTabProps) => {
                   disabled={deploying || !activeAddress}
                   onClick={deploy}
                 >
-                  {deploying ? 'Deploying...' : 'Deploy New'}
+                  {deploying ? 'Deploying...' : 'Deploy New Contract'}
                 </button>
               </div>
             </div>

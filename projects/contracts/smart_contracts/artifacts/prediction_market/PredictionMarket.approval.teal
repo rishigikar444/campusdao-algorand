@@ -3,8 +3,8 @@
 
 // smart_contracts.prediction_market.contract.PredictionMarket.__algopy_entrypoint_with_init() -> uint64:
 main:
-    intcblock 1 0 2
-    bytecblock 0x151f7c75 "mc" "ms" "md" "ml" "mo" "my" "mn" "yb" "nb" "market_count" "v1" "v2" "v3" "o1" "o2" "o3" "mr" "c1" "c2" "c3"
+    intcblock 1 0
+    bytecblock 0x151f7c75 "mc" "ms" "md" "ml" "mo" "my" "mn" "yb" "nb" "market_count" "v1" "v2" "v3" "o1" "o2" "o3" "c1" "c2" "c3"
     txn ApplicationID
     bnz main_after_if_else@2
     // smart_contracts/prediction_market/contract.py:11
@@ -499,7 +499,7 @@ create_market:
     box_put
     // smart_contracts/prediction_market/contract.py:112
     // self.market_resolution_time[market_id] = resolution_time
-    bytec 17 // "mr"
+    pushbytes "mr"
     dig 1
     concat
     frame_dig -6
@@ -553,21 +553,21 @@ create_market:
     box_put
     // smart_contracts/prediction_market/contract.py:120
     // self.market_council1[market_id] = council1
-    bytec 18 // "c1"
+    bytec 17 // "c1"
     dig 2
     concat
     frame_dig -4
     box_put
     // smart_contracts/prediction_market/contract.py:121
     // self.market_council2[market_id] = council2
-    bytec 19 // "c2"
+    bytec 18 // "c2"
     dig 2
     concat
     frame_dig -3
     box_put
     // smart_contracts/prediction_market/contract.py:122
     // self.market_council3[market_id] = council3
-    bytec 20 // "c3"
+    bytec 19 // "c3"
     dig 2
     concat
     frame_dig -2
@@ -1266,20 +1266,8 @@ vote_outcome:
     assert // check self.market_resolved entry exists
     !
     assert // Market already resolved
-    // smart_contracts/prediction_market/contract.py:265
-    // assert Global.latest_timestamp >= self.market_resolution_time[market_id], "Resolution time not reached"
-    global LatestTimestamp
-    bytec 17 // "mr"
-    dig 2
-    concat
-    box_get
-    swap
-    btoi
-    swap
-    assert // check self.market_resolution_time entry exists
-    >=
-    assert // Resolution time not reached
-    // smart_contracts/prediction_market/contract.py:266
+    // smart_contracts/prediction_market/contract.py:265-266
+    // # Resolution time check removed for prototype
     // assert outcome <= UInt64(1), "Outcome must be 0 or 1"
     frame_dig -1
     intc_0 // 1
@@ -1292,7 +1280,7 @@ vote_outcome:
     cover 2
     // smart_contracts/prediction_market/contract.py:270
     // if sender == self.market_council1[market_id]:
-    bytec 18 // "c1"
+    bytec 17 // "c1"
     uncover 2
     concat
     box_get
@@ -1487,10 +1475,8 @@ vote_outcome_after_if_else@25:
     frame_bury 0
     frame_dig 3
     // smart_contracts/prediction_market/contract.py:78-79
-    // # 2-of-3 agreement resolves the market
-    // if yes_votes >= UInt64(2):
-    intc_2 // 2
-    >=
+    // # 1-of-3 resolves the market (prototype mode)
+    // if yes_votes >= UInt64(1):
     bz vote_outcome_else_body@27
     // smart_contracts/prediction_market/contract.py:80
     // self.market_resolved[market_id] = UInt64(1)
@@ -1512,10 +1498,8 @@ vote_outcome_after_if_else@29:
 
 vote_outcome_else_body@27:
     // smart_contracts/prediction_market/contract.py:82
-    // elif no_votes >= UInt64(2):
+    // elif no_votes >= UInt64(1):
     frame_dig 0
-    intc_2 // 2
-    >=
     bz vote_outcome_after_if_else@29
     // smart_contracts/prediction_market/contract.py:83
     // self.market_resolved[market_id] = UInt64(1)
@@ -1562,7 +1546,7 @@ vote_outcome_else_body@13:
 vote_outcome_else_body@2:
     // smart_contracts/prediction_market/contract.py:274
     // elif sender == self.market_council2[market_id]:
-    bytec 19 // "c2"
+    bytec 18 // "c2"
     frame_dig 4
     concat
     box_get
@@ -1603,7 +1587,7 @@ vote_outcome_else_body@2:
 vote_outcome_else_body@4:
     // smart_contracts/prediction_market/contract.py:278
     // elif sender == self.market_council3[market_id]:
-    bytec 20 // "c3"
+    bytec 19 // "c3"
     frame_dig 4
     dup
     cover 2

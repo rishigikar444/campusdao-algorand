@@ -37,6 +37,7 @@ interface MarketData {
 
 interface MarketsTabProps {
   onNavigateToCreate: () => void
+  onNavigateToResolve?: () => void
 }
 
 // SVG distribution bar
@@ -87,12 +88,13 @@ const encodePositionBoxName = (prefix: string, marketId: number, address: string
   return combined
 }
 
-const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
+const MarketsTab = ({ onNavigateToCreate, onNavigateToResolve }: MarketsTabProps) => {
   const { enqueueSnackbar } = useSnackbar()
   const { algorand, activeAddress, transactionSigner } = useAlgorand()
 
   const [appId, setAppId] = useState('')
   const [markets, setMarkets] = useState<MarketData[]>([])
+  const [councilMap, setCouncilMap] = useState<Record<number, MarketMeta>>({})
   const [loading, setLoading] = useState(true)
   const [buyAmounts, setBuyAmounts] = useState<Record<number, string>>({})
   const [sellAmounts, setSellAmounts] = useState<Record<number, string>>({})
@@ -128,7 +130,13 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
       const effectiveAppId = currentAppId || String(metaList[0].appId)
       if (!currentAppId) setAppId(effectiveAppId)
 
-      const metaMap = new Map(metaList.filter((m) => m.appId === Number(effectiveAppId)).map((m) => [m.marketId, m]))
+      const filteredMeta = metaList.filter((m) => m.appId === Number(effectiveAppId))
+      const metaMap = new Map(filteredMeta.map((m) => [m.marketId, m]))
+
+      // Store council data for Resolve button visibility
+      const cMap: Record<number, MarketMeta> = {}
+      for (const m of filteredMeta) cMap[m.marketId] = m
+      setCouncilMap(cMap)
 
       if (!activeAddress) {
         // No wallet connected — show metadata-only cards
@@ -384,7 +392,8 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
       setActionLoading(key)
       const client = getClient(appId)
 
-      const boxRefs = [
+      // 9 boxes total — exceeds 8-per-call limit, split across pad + redeem
+      const padBoxes = [
         encodeBoxName('mc', marketId),
         encodeBoxName('md', marketId),
         encodeBoxName('mo', marketId),
@@ -393,18 +402,28 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
         encodeBoxName('ml', marketId),
         encodePositionBoxName('yb', marketId, activeAddress),
         encodePositionBoxName('nb', marketId, activeAddress),
+      ]
+
+      const redeemBoxes = [
         encodePositionBoxName('hr', marketId, activeAddress),
       ]
 
-      const res = await client.send.redeem({
-        args: { marketId: BigInt(marketId) },
-        sender: activeAddress,
-        extraFee: microAlgos(1000),
-        boxReferences: boxRefs,
-        populateAppCallResources: false,
-      })
+      const res = await client.newGroup()
+        .pad({
+          args: [],
+          sender: activeAddress,
+          boxReferences: padBoxes,
+        })
+        .redeem({
+          args: { marketId: BigInt(marketId) },
+          sender: activeAddress,
+          extraFee: microAlgos(1000),
+          boxReferences: redeemBoxes,
+          populateAppCallResources: false,
+        })
+        .send()
 
-      const payout = Number(res.return ?? 0)
+      const payout = Number(res.returns[1] ?? 0)
       enqueueSnackbar(`Redeemed! Payout: ${(payout / 1_000_000).toFixed(6)} ALGO`, { variant: 'success' })
       loadMarkets()
     } catch (e) {
@@ -588,6 +607,21 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
                       onClick={() => redeemShares(market.marketId)}
                     >
                       {isRedeeming ? 'Redeeming...' : 'Redeem Winning Shares'}
+                    </button>
+                  )}
+
+                  {/* Resolve Button (for council members on unresolved markets) */}
+                  {!market.resolved && onNavigateToResolve && activeAddress && councilMap[market.marketId] && (
+                    councilMap[market.marketId].council1 === activeAddress ||
+                    councilMap[market.marketId].council2 === activeAddress ||
+                    councilMap[market.marketId].council3 === activeAddress
+                  ) && (
+                    <button
+                      className="xp-btn text-xs"
+                      style={{ backgroundColor: '#FFF3E0' }}
+                      onClick={onNavigateToResolve}
+                    >
+                      Resolve (Council)
                     </button>
                   )}
                 </div>

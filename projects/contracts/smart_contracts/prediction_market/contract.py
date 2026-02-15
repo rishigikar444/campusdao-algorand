@@ -75,11 +75,11 @@ class PredictionMarket(ARC4Contract):
             else:
                 no_votes += UInt64(1)
 
-        # 2-of-3 agreement resolves the market
-        if yes_votes >= UInt64(2):
+        # 1-of-3 resolves the market (prototype mode)
+        if yes_votes >= UInt64(1):
             self.market_resolved[market_id] = UInt64(1)
             self.market_outcome[market_id] = UInt64(1)
-        elif no_votes >= UInt64(2):
+        elif no_votes >= UInt64(1):
             self.market_resolved[market_id] = UInt64(1)
             self.market_outcome[market_id] = UInt64(0)
 
@@ -262,7 +262,7 @@ class PredictionMarket(ARC4Contract):
         _creator, exists = self.market_creator.maybe(market_id)
         assert exists, "Market does not exist"
         assert self.market_resolved[market_id] == UInt64(0), "Market already resolved"
-        assert Global.latest_timestamp >= self.market_resolution_time[market_id], "Resolution time not reached"
+        # Resolution time check removed for prototype
         assert outcome <= UInt64(1), "Outcome must be 0 or 1"
 
         sender = Txn.sender
