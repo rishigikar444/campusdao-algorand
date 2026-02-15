@@ -92,69 +92,71 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
   const { algorand, activeAddress, transactionSigner } = useAlgorand()
 
   const [appId, setAppId] = useState('')
-  const [appIdLoading, setAppIdLoading] = useState(true)
   const [markets, setMarkets] = useState<MarketData[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [buyAmounts, setBuyAmounts] = useState<Record<number, string>>({})
   const [sellAmounts, setSellAmounts] = useState<Record<number, string>>({})
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  // On mount, try to find an existing App ID from the DB
-  useEffect(() => {
-    const fetchExistingAppId = async () => {
-      try {
-        const res = await fetch('/api/markets?all=true')
-        if (res.ok) {
-          const markets = await res.json()
-          if (markets.length > 0) {
-            setAppId(String(markets[0].appId))
-          }
-        }
-      } catch {
-        // DB unavailable
-      } finally {
-        setAppIdLoading(false)
-      }
-    }
-    fetchExistingAppId()
-  }, [])
-
-  const getClient = () => {
-    if (!appId) throw new Error('Set App ID first')
+  const getClient = (id: string) => {
     return new PredictionMarketClient({
-      appId: BigInt(appId),
+      appId: BigInt(id),
       algorand,
       defaultSigner: transactionSigner,
     })
   }
 
-  const loadMarkets = async () => {
-    if (!appId) {
-      enqueueSnackbar('Enter an App ID first', { variant: 'warning' })
-      return
-    }
+  const loadMarkets = async (resolvedAppId?: string) => {
+    const currentAppId = resolvedAppId || appId
     try {
       setLoading(true)
-      const client = getClient()
 
-      // Fetch metadata from backend
-      let metaMap = new Map<number, MarketMeta>()
-      try {
-        const metaRes = await fetch(`/api/markets?appId=${appId}&all=true`)
-        if (metaRes.ok) {
-          const metaList: MarketMeta[] = await metaRes.json()
-          metaMap = new Map(metaList.map((m) => [m.marketId, m]))
-        }
-      } catch {
-        // DB unavailable — will still show on-chain data
+      // Fetch all market metadata from the backend
+      const metaRes = await fetch('/api/markets?all=true')
+      if (!metaRes.ok) {
+        setMarkets([])
+        return
+      }
+      const metaList: MarketMeta[] = await metaRes.json()
+
+      if (metaList.length === 0) {
+        setMarkets([])
+        return
       }
 
+      // Use the appId from the first market record if we don't have one yet
+      const effectiveAppId = currentAppId || String(metaList[0].appId)
+      if (!currentAppId) setAppId(effectiveAppId)
+
+      const metaMap = new Map(metaList.filter((m) => m.appId === Number(effectiveAppId)).map((m) => [m.marketId, m]))
+
+      if (!activeAddress) {
+        // No wallet connected — show metadata-only cards
+        const loaded: MarketData[] = Array.from(metaMap.values()).map((meta) => ({
+          marketId: meta.marketId,
+          question: meta.question,
+          description: meta.description,
+          resolutionDate: meta.resolutionDate,
+          yesSupply: 0,
+          noSupply: 0,
+          collateral: 0,
+          scale: meta.priceScale,
+          resolved: false,
+          outcome: 0,
+          userYes: 0,
+          userNo: 0,
+        }))
+        setMarkets(loaded)
+        return
+      }
+
+      // Wallet connected — enrich with on-chain data
+      const client = getClient(effectiveAppId)
       const countBig = await client.state.global.marketCount()
       const count = Number(countBig ?? 0)
 
       if (count === 0) {
         setMarkets([])
-        enqueueSnackbar('No markets found', { variant: 'info' })
         return
       }
 
@@ -164,7 +166,7 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
         try {
           const infoRes = await client.send.getMarketInfo({
             args: { marketId: BigInt(i) },
-            sender: activeAddress!,
+            sender: activeAddress,
             boxReferences: [
               encodeBoxName('mc', i),
               encodeBoxName('my', i),
@@ -182,22 +184,20 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
           let userYes = 0
           let userNo = 0
 
-          if (activeAddress) {
-            try {
-              const posRes = await client.send.getPosition({
-                args: { marketId: BigInt(i), account: activeAddress },
-                sender: activeAddress,
-                boxReferences: [
-                  encodePositionBoxName('yb', i, activeAddress),
-                  encodePositionBoxName('nb', i, activeAddress),
-                ],
-                populateAppCallResources: false,
-              })
-              userYes = Number(posRes.return![0])
-              userNo = Number(posRes.return![1])
-            } catch {
-              // No position yet
-            }
+          try {
+            const posRes = await client.send.getPosition({
+              args: { marketId: BigInt(i), account: activeAddress },
+              sender: activeAddress,
+              boxReferences: [
+                encodePositionBoxName('yb', i, activeAddress),
+                encodePositionBoxName('nb', i, activeAddress),
+              ],
+              populateAppCallResources: false,
+            })
+            userYes = Number(posRes.return![0])
+            userNo = Number(posRes.return![1])
+          } catch {
+            // No position yet
           }
 
           const meta = metaMap.get(i)
@@ -222,13 +222,18 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
       }
 
       setMarkets(loaded)
-      enqueueSnackbar(`Loaded ${loaded.length} market(s)`, { variant: 'success' })
     } catch (e) {
-      enqueueSnackbar(`Failed to load markets: ${(e as Error).message}`, { variant: 'error' })
+      console.warn('Failed to load markets:', e)
+      setMarkets([])
     } finally {
       setLoading(false)
     }
   }
+
+  // Auto-load markets on mount and when wallet changes
+  useEffect(() => {
+    loadMarkets()
+  }, [activeAddress])
 
   const buyShares = async (marketId: number, side: 'yes' | 'no') => {
     const amountStr = buyAmounts[marketId]
@@ -245,7 +250,7 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
     const key = `buy-${side}-${marketId}`
     try {
       setActionLoading(key)
-      const client = getClient()
+      const client = getClient(appId)
 
       // Get exact cost
       const costRes = await client.send.getBuyCost({
@@ -325,7 +330,7 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
     const key = `sell-${side}-${marketId}`
     try {
       setActionLoading(key)
-      const client = getClient()
+      const client = getClient(appId)
 
       const positionBoxes = [
         encodePositionBoxName(side === 'yes' ? 'yb' : 'nb', marketId, activeAddress),
@@ -377,7 +382,7 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
     const key = `redeem-${marketId}`
     try {
       setActionLoading(key)
-      const client = getClient()
+      const client = getClient(appId)
 
       const boxRefs = [
         encodeBoxName('mc', marketId),
@@ -415,34 +420,14 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* App ID Input */}
-      <div className="flex items-end gap-2">
-        <div className="flex-1">
-          <label className="font-xp-body text-xs text-gray-600 block mb-1">Prediction Market App ID</label>
-          {appIdLoading ? (
-            <div className="text-xs font-xp-body text-gray-500 py-1">Checking for existing contract...</div>
-          ) : (
-            <input
-              className="xp-input"
-              placeholder="Enter App ID"
-              value={appId}
-              onChange={(e) => setAppId(e.target.value)}
-            />
-          )}
-        </div>
-        <button
-          className="xp-btn text-xs px-3"
-          disabled={loading || !appId || appIdLoading}
-          onClick={loadMarkets}
-        >
-          {loading ? 'Loading...' : 'Load Markets'}
-        </button>
-      </div>
-
-      {/* Markets Grid */}
-      {markets.length === 0 && !loading ? (
+      {/* Loading / Empty State */}
+      {loading ? (
         <div className="text-center py-12 font-xp-body text-sm text-gray-500">
-          {appId ? 'No markets loaded. Click "Load Markets" to fetch on-chain data.' : 'Enter an App ID to browse prediction markets.'}
+          Loading markets...
+        </div>
+      ) : markets.length === 0 ? (
+        <div className="text-center py-12 font-xp-body text-sm text-gray-500">
+          No markets yet. Create one to get started!
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -522,34 +507,46 @@ const MarketsTab = ({ onNavigateToCreate }: MarketsTabProps) => {
                   )}
 
                   {/* Buy Row (only on active markets) */}
-                  {!market.resolved && (
-                    <div className="flex items-center gap-1">
-                      <input
-                        className="xp-input flex-1"
-                        type="number"
-                        min="1"
-                        placeholder="Amount"
-                        value={buyAmounts[market.marketId] ?? ''}
-                        onChange={(e) => setBuyAmounts((prev) => ({ ...prev, [market.marketId]: e.target.value }))}
-                      />
-                      <button
-                        className="xp-btn text-xs px-2"
-                        style={{ backgroundColor: '#E8F5E9' }}
-                        disabled={isBuying || !activeAddress}
-                        onClick={() => buyShares(market.marketId, 'yes')}
-                      >
-                        {actionLoading === `buy-yes-${market.marketId}` ? '...' : 'Buy YES'}
-                      </button>
-                      <button
-                        className="xp-btn text-xs px-2"
-                        style={{ backgroundColor: '#FFEBEE' }}
-                        disabled={isBuying || !activeAddress}
-                        onClick={() => buyShares(market.marketId, 'no')}
-                      >
-                        {actionLoading === `buy-no-${market.marketId}` ? '...' : 'Buy NO'}
-                      </button>
-                    </div>
-                  )}
+                  {!market.resolved && (() => {
+                    const buyAmt = parseInt(buyAmounts[market.marketId] || '0', 10)
+                    const buyCost = buyAmt > 0 ? buyAmt * market.scale : 0
+
+                    return (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1">
+                          <input
+                            className="xp-input flex-1"
+                            type="number"
+                            min="1"
+                            placeholder="Amount"
+                            value={buyAmounts[market.marketId] ?? ''}
+                            onChange={(e) => setBuyAmounts((prev) => ({ ...prev, [market.marketId]: e.target.value }))}
+                          />
+                          <button
+                            className="xp-btn text-xs px-2"
+                            style={{ backgroundColor: '#E8F5E9' }}
+                            disabled={isBuying || !activeAddress}
+                            onClick={() => buyShares(market.marketId, 'yes')}
+                          >
+                            {actionLoading === `buy-yes-${market.marketId}` ? '...' : 'Buy YES'}
+                          </button>
+                          <button
+                            className="xp-btn text-xs px-2"
+                            style={{ backgroundColor: '#FFEBEE' }}
+                            disabled={isBuying || !activeAddress}
+                            onClick={() => buyShares(market.marketId, 'no')}
+                          >
+                            {actionLoading === `buy-no-${market.marketId}` ? '...' : 'Buy NO'}
+                          </button>
+                        </div>
+                        {buyCost > 0 && (
+                          <div className="text-xs font-xp-body text-gray-500 pl-1">
+                            Cost: <strong>{formatAlgo(buyCost)} ALGO</strong> for {buyAmt} share{buyAmt > 1 ? 's' : ''}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
 
                   {/* Sell Row (only if user holds shares on active markets) */}
                   {!market.resolved && (market.userYes > 0 || market.userNo > 0) && (
