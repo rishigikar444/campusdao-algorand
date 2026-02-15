@@ -1,0 +1,1044 @@
+#pragma version 10
+#pragma typetrack false
+
+// smart_contracts.splitwise.contract.Splitwise.__algopy_entrypoint_with_init() -> uint64:
+main:
+    intcblock 1 0 65536
+    bytecblock "ig" 0x151f7c75 "gm" "xp" "group_count" "expense_count" "gc" "ga" "ep" "sc" "en" "es" "ea"
+    txn ApplicationID
+    bnz main_after_if_else@2
+    // smart_contracts/splitwise/contract.py:12
+    // self.group_count = UInt64(0)
+    bytec 4 // "group_count"
+    intc_1 // 0
+    app_global_put
+    // smart_contracts/splitwise/contract.py:13
+    // self.expense_count = UInt64(0)
+    bytec 5 // "expense_count"
+    intc_1 // 0
+    app_global_put
+
+main_after_if_else@2:
+    // smart_contracts/splitwise/contract.py:6
+    // class Splitwise(ARC4Contract):
+    txn NumAppArgs
+    bz main_bare_routing@10
+    pushbytess 0xb0c7f530 0x1a622f36 0x5f183588 0xd89e65c0 0xc826ca12 // method "create_group(account,account,account,pay)uint64", method "add_expense(uint64,uint64,account,account,account,pay)uint64", method "settle_expense(uint64,pay)uint64", method "close_group(uint64)void", method "get_expense_info(uint64)(uint64,uint64,uint64,uint64)"
+    txna ApplicationArgs 0
+    match main_create_group_route@5 main_add_expense_route@6 main_settle_expense_route@7 main_close_group_route@8 main_get_expense_info_route@9
+
+main_after_if_else@12:
+    // smart_contracts/splitwise/contract.py:6
+    // class Splitwise(ARC4Contract):
+    intc_1 // 0
+    return
+
+main_get_expense_info_route@9:
+    // smart_contracts/splitwise/contract.py:219
+    // @abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/splitwise/contract.py:6
+    // class Splitwise(ARC4Contract):
+    txna ApplicationArgs 1
+    btoi
+    // smart_contracts/splitwise/contract.py:219
+    // @abimethod()
+    callsub get_expense_info
+    uncover 3
+    itob
+    uncover 3
+    itob
+    uncover 3
+    itob
+    uncover 3
+    itob
+    uncover 3
+    uncover 3
+    concat
+    uncover 2
+    concat
+    swap
+    concat
+    bytec_1 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_0 // 1
+    return
+
+main_close_group_route@8:
+    // smart_contracts/splitwise/contract.py:210
+    // @abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/splitwise/contract.py:6
+    // class Splitwise(ARC4Contract):
+    txna ApplicationArgs 1
+    btoi
+    // smart_contracts/splitwise/contract.py:210
+    // @abimethod()
+    callsub close_group
+    intc_0 // 1
+    return
+
+main_settle_expense_route@7:
+    // smart_contracts/splitwise/contract.py:163
+    // @abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/splitwise/contract.py:6
+    // class Splitwise(ARC4Contract):
+    txna ApplicationArgs 1
+    btoi
+    txn GroupIndex
+    intc_0 // 1
+    -
+    dup
+    gtxns TypeEnum
+    intc_0 // pay
+    ==
+    assert // transaction type is pay
+    // smart_contracts/splitwise/contract.py:163
+    // @abimethod()
+    callsub settle_expense
+    itob
+    bytec_1 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_0 // 1
+    return
+
+main_add_expense_route@6:
+    // smart_contracts/splitwise/contract.py:96
+    // @abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/splitwise/contract.py:6
+    // class Splitwise(ARC4Contract):
+    txna ApplicationArgs 1
+    btoi
+    txna ApplicationArgs 2
+    btoi
+    txna ApplicationArgs 3
+    btoi
+    txnas Accounts
+    txna ApplicationArgs 4
+    btoi
+    txnas Accounts
+    txna ApplicationArgs 5
+    btoi
+    txnas Accounts
+    txn GroupIndex
+    intc_0 // 1
+    -
+    dup
+    gtxns TypeEnum
+    intc_0 // pay
+    ==
+    assert // transaction type is pay
+    // smart_contracts/splitwise/contract.py:96
+    // @abimethod()
+    callsub add_expense
+    itob
+    bytec_1 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_0 // 1
+    return
+
+main_create_group_route@5:
+    // smart_contracts/splitwise/contract.py:48
+    // @abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is not NoOp
+    txn ApplicationID
+    assert // can only call when not creating
+    // smart_contracts/splitwise/contract.py:6
+    // class Splitwise(ARC4Contract):
+    txna ApplicationArgs 1
+    btoi
+    txnas Accounts
+    txna ApplicationArgs 2
+    btoi
+    txnas Accounts
+    txna ApplicationArgs 3
+    btoi
+    txnas Accounts
+    txn GroupIndex
+    intc_0 // 1
+    -
+    dup
+    gtxns TypeEnum
+    intc_0 // pay
+    ==
+    assert // transaction type is pay
+    // smart_contracts/splitwise/contract.py:48
+    // @abimethod()
+    callsub create_group
+    itob
+    bytec_1 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_0 // 1
+    return
+
+main_bare_routing@10:
+    // smart_contracts/splitwise/contract.py:6
+    // class Splitwise(ARC4Contract):
+    txn OnCompletion
+    bnz main_after_if_else@12
+    txn ApplicationID
+    !
+    assert // can only call when creating
+    intc_0 // 1
+    return
+
+
+// smart_contracts.splitwise.contract.Splitwise.create_group(member1: bytes, member2: bytes, member3: bytes, mbr_pay: uint64) -> uint64:
+create_group:
+    // smart_contracts/splitwise/contract.py:48-55
+    // @abimethod()
+    // def create_group(
+    //     self,
+    //     member1: Account,
+    //     member2: Account,
+    //     member3: Account,
+    //     mbr_pay: gtxn.PaymentTransaction,
+    // ) -> UInt64:
+    proto 4 1
+    pushbytes ""
+    // smart_contracts/splitwise/contract.py:59
+    // assert mbr_pay.receiver == Global.current_application_address, "MBR payment must go to app"
+    frame_dig -1
+    gtxns Receiver
+    global CurrentApplicationAddress
+    ==
+    assert // MBR payment must go to app
+    // smart_contracts/splitwise/contract.py:61
+    // group_id = self.group_count + UInt64(1)
+    intc_1 // 0
+    bytec 4 // "group_count"
+    app_global_get_ex
+    assert // check self.group_count exists
+    intc_0 // 1
+    +
+    dup
+    // smart_contracts/splitwise/contract.py:62
+    // self.group_count = group_id
+    bytec 4 // "group_count"
+    dig 1
+    app_global_put
+    // smart_contracts/splitwise/contract.py:64
+    // self.group_creator[group_id] = Txn.sender
+    dup
+    itob
+    dup
+    cover 2
+    bytec 6 // "gc"
+    dig 1
+    concat
+    txn Sender
+    box_put
+    // smart_contracts/splitwise/contract.py:65
+    // self.group_active[group_id] = UInt64(1)
+    bytec 7 // "ga"
+    dig 1
+    concat
+    intc_0 // 1
+    itob
+    dup
+    cover 4
+    swap
+    dig 1
+    box_put
+    // smart_contracts/splitwise/contract.py:69
+    // key0 = group_id * UInt64(2**16) + member_index
+    uncover 2
+    intc_2 // 65536
+    *
+    dup
+    cover 3
+    // smart_contracts/splitwise/contract.py:70
+    // self.group_members[key0] = Txn.sender
+    itob
+    bytec_2 // "gm"
+    swap
+    concat
+    txn Sender
+    box_put
+    // smart_contracts/splitwise/contract.py:71
+    // self.is_group_member[self._group_member_key(group_id, Txn.sender)] = UInt64(1)
+    txn Sender
+    // smart_contracts/splitwise/contract.py:42
+    // return op.concat(op.itob(group_id), account.bytes)
+    uncover 2
+    swap
+    concat
+    // smart_contracts/splitwise/contract.py:71
+    // self.is_group_member[self._group_member_key(group_id, Txn.sender)] = UInt64(1)
+    bytec_0 // "ig"
+    swap
+    concat
+    swap
+    box_put
+    // smart_contracts/splitwise/contract.py:72
+    // member_index += UInt64(1)
+    intc_0 // 1
+    // smart_contracts/splitwise/contract.py:74
+    // if member1 != Global.zero_address:
+    frame_dig -4
+    global ZeroAddress
+    !=
+    bz create_group_after_if_else@2
+    // smart_contracts/splitwise/contract.py:75
+    // key1 = group_id * UInt64(2**16) + member_index
+    frame_dig 4
+    // smart_contracts/splitwise/contract.py:72
+    // member_index += UInt64(1)
+    intc_0 // 1
+    // smart_contracts/splitwise/contract.py:75
+    // key1 = group_id * UInt64(2**16) + member_index
+    +
+    // smart_contracts/splitwise/contract.py:76
+    // self.group_members[key1] = member1
+    itob
+    bytec_2 // "gm"
+    swap
+    concat
+    frame_dig -4
+    box_put
+    // smart_contracts/splitwise/contract.py:42
+    // return op.concat(op.itob(group_id), account.bytes)
+    frame_dig 2
+    frame_dig -4
+    concat
+    // smart_contracts/splitwise/contract.py:77
+    // self.is_group_member[self._group_member_key(group_id, member1)] = UInt64(1)
+    bytec_0 // "ig"
+    swap
+    concat
+    frame_dig 3
+    box_put
+    // smart_contracts/splitwise/contract.py:78
+    // member_index += UInt64(1)
+    pushint 2 // 2
+    frame_bury 5
+
+create_group_after_if_else@2:
+    // smart_contracts/splitwise/contract.py:80
+    // if member2 != Global.zero_address:
+    frame_dig -3
+    global ZeroAddress
+    !=
+    frame_dig 5
+    frame_bury 0
+    bz create_group_after_if_else@4
+    // smart_contracts/splitwise/contract.py:81
+    // key2 = group_id * UInt64(2**16) + member_index
+    frame_dig 4
+    frame_dig 5
+    dup
+    cover 2
+    +
+    // smart_contracts/splitwise/contract.py:82
+    // self.group_members[key2] = member2
+    itob
+    bytec_2 // "gm"
+    swap
+    concat
+    frame_dig -3
+    box_put
+    // smart_contracts/splitwise/contract.py:42
+    // return op.concat(op.itob(group_id), account.bytes)
+    frame_dig 2
+    frame_dig -3
+    concat
+    // smart_contracts/splitwise/contract.py:83
+    // self.is_group_member[self._group_member_key(group_id, member2)] = UInt64(1)
+    bytec_0 // "ig"
+    swap
+    concat
+    frame_dig 3
+    box_put
+    // smart_contracts/splitwise/contract.py:84
+    // member_index += UInt64(1)
+    intc_0 // 1
+    +
+    frame_bury 0
+
+create_group_after_if_else@4:
+    frame_dig 0
+    dup
+    frame_bury 5
+    // smart_contracts/splitwise/contract.py:86
+    // if member3 != Global.zero_address:
+    frame_dig -2
+    global ZeroAddress
+    !=
+    swap
+    frame_bury 0
+    bz create_group_after_if_else@6
+    // smart_contracts/splitwise/contract.py:87
+    // key3 = group_id * UInt64(2**16) + member_index
+    frame_dig 4
+    frame_dig 5
+    dup
+    cover 2
+    +
+    // smart_contracts/splitwise/contract.py:88
+    // self.group_members[key3] = member3
+    itob
+    bytec_2 // "gm"
+    swap
+    concat
+    frame_dig -2
+    box_put
+    // smart_contracts/splitwise/contract.py:42
+    // return op.concat(op.itob(group_id), account.bytes)
+    frame_dig 2
+    frame_dig -2
+    concat
+    // smart_contracts/splitwise/contract.py:89
+    // self.is_group_member[self._group_member_key(group_id, member3)] = UInt64(1)
+    bytec_0 // "ig"
+    swap
+    concat
+    frame_dig 3
+    box_put
+    // smart_contracts/splitwise/contract.py:90
+    // member_index += UInt64(1)
+    intc_0 // 1
+    +
+    frame_bury 0
+
+create_group_after_if_else@6:
+    frame_dig 0
+    // smart_contracts/splitwise/contract.py:92
+    // self.group_member_count[group_id] = member_index
+    pushbytes "gn"
+    frame_dig 2
+    concat
+    swap
+    itob
+    box_put
+    // smart_contracts/splitwise/contract.py:94
+    // return group_id
+    frame_dig 1
+    frame_bury 0
+    retsub
+
+
+// smart_contracts.splitwise.contract.Splitwise.add_expense(group_id: uint64, amount: uint64, participant1: bytes, participant2: bytes, participant3: bytes, mbr_pay: uint64) -> uint64:
+add_expense:
+    // smart_contracts/splitwise/contract.py:96-105
+    // @abimethod()
+    // def add_expense(
+    //     self,
+    //     group_id: UInt64,
+    //     amount: UInt64,
+    //     participant1: Account,
+    //     participant2: Account,
+    //     participant3: Account,
+    //     mbr_pay: gtxn.PaymentTransaction,
+    // ) -> UInt64:
+    proto 6 1
+    pushbytes ""
+    // smart_contracts/splitwise/contract.py:110
+    // assert mbr_pay.receiver == Global.current_application_address, "MBR payment must go to app"
+    frame_dig -1
+    gtxns Receiver
+    global CurrentApplicationAddress
+    ==
+    assert // MBR payment must go to app
+    // smart_contracts/splitwise/contract.py:112
+    // creator_val, exists = self.group_creator.maybe(group_id)
+    frame_dig -6
+    itob
+    dup
+    bytec 6 // "gc"
+    dig 1
+    concat
+    box_get
+    bury 1
+    // smart_contracts/splitwise/contract.py:113
+    // assert exists, "Group does not exist"
+    assert // Group does not exist
+    // smart_contracts/splitwise/contract.py:114
+    // assert self.group_active[group_id] == UInt64(1), "Group is closed"
+    bytec 7 // "ga"
+    dig 1
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.group_active entry exists
+    intc_0 // 1
+    ==
+    assert // Group is closed
+    // smart_contracts/splitwise/contract.py:42
+    // return op.concat(op.itob(group_id), account.bytes)
+    dup
+    // smart_contracts/splitwise/contract.py:116-117
+    // # Verify caller is a member
+    // mem_val, is_mem = self.is_group_member.maybe(self._group_member_key(group_id, Txn.sender))
+    txn Sender
+    // smart_contracts/splitwise/contract.py:42
+    // return op.concat(op.itob(group_id), account.bytes)
+    concat
+    // smart_contracts/splitwise/contract.py:116-117
+    // # Verify caller is a member
+    // mem_val, is_mem = self.is_group_member.maybe(self._group_member_key(group_id, Txn.sender))
+    bytec_0 // "ig"
+    swap
+    concat
+    box_get
+    bury 1
+    // smart_contracts/splitwise/contract.py:118
+    // assert is_mem, "Only group members can add expenses"
+    assert // Only group members can add expenses
+    // smart_contracts/splitwise/contract.py:120
+    // assert amount > 0, "Amount must be > 0"
+    frame_dig -5
+    assert // Amount must be > 0
+    // smart_contracts/splitwise/contract.py:122
+    // expense_id = self.expense_count + UInt64(1)
+    intc_1 // 0
+    bytec 5 // "expense_count"
+    app_global_get_ex
+    assert // check self.expense_count exists
+    intc_0 // 1
+    +
+    dup
+    cover 2
+    // smart_contracts/splitwise/contract.py:123
+    // self.expense_count = expense_id
+    bytec 5 // "expense_count"
+    dig 1
+    app_global_put
+    // smart_contracts/splitwise/contract.py:125
+    // self.expense_group[expense_id] = group_id
+    itob
+    dup
+    cover 2
+    pushbytes "eg"
+    dig 1
+    concat
+    uncover 2
+    box_put
+    // smart_contracts/splitwise/contract.py:126
+    // self.expense_payer[expense_id] = Txn.sender
+    bytec 8 // "ep"
+    dig 1
+    concat
+    txn Sender
+    box_put
+    // smart_contracts/splitwise/contract.py:127
+    // self.expense_amount[expense_id] = amount
+    bytec 12 // "ea"
+    dig 1
+    concat
+    frame_dig -5
+    itob
+    box_put
+    // smart_contracts/splitwise/contract.py:128
+    // self.expense_settled_count[expense_id] = UInt64(0)
+    bytec 9 // "sc"
+    swap
+    concat
+    intc_1 // 0
+    itob
+    box_put
+    // smart_contracts/splitwise/contract.py:130-131
+    // # Add participants (people who owe their share)
+    // p_index = UInt64(0)
+    intc_1 // 0
+    // smart_contracts/splitwise/contract.py:133
+    // if participant1 != Global.zero_address:
+    frame_dig -4
+    global ZeroAddress
+    !=
+    bz add_expense_after_if_else@2
+    // smart_contracts/splitwise/contract.py:42
+    // return op.concat(op.itob(group_id), account.bytes)
+    frame_dig 1
+    frame_dig -4
+    concat
+    // smart_contracts/splitwise/contract.py:134-135
+    // # Verify participant is group member
+    // p1_val, is_p1 = self.is_group_member.maybe(self._group_member_key(group_id, participant1))
+    bytec_0 // "ig"
+    swap
+    concat
+    box_get
+    bury 1
+    // smart_contracts/splitwise/contract.py:136
+    // assert is_p1, "Participant 1 not in group"
+    assert // Participant 1 not in group
+    // smart_contracts/splitwise/contract.py:137
+    // key1 = expense_id * UInt64(2**16) + p_index
+    frame_dig 2
+    intc_2 // 65536
+    *
+    // smart_contracts/splitwise/contract.py:138
+    // self.expense_participants[key1] = participant1
+    itob
+    bytec_3 // "xp"
+    swap
+    concat
+    frame_dig -4
+    box_put
+    // smart_contracts/splitwise/contract.py:139
+    // p_index += UInt64(1)
+    intc_0 // 1
+    frame_bury 4
+
+add_expense_after_if_else@2:
+    // smart_contracts/splitwise/contract.py:141
+    // if participant2 != Global.zero_address:
+    frame_dig -3
+    global ZeroAddress
+    !=
+    frame_dig 4
+    frame_bury 0
+    bz add_expense_after_if_else@4
+    // smart_contracts/splitwise/contract.py:42
+    // return op.concat(op.itob(group_id), account.bytes)
+    frame_dig 1
+    frame_dig -3
+    concat
+    // smart_contracts/splitwise/contract.py:142
+    // p2_val, is_p2 = self.is_group_member.maybe(self._group_member_key(group_id, participant2))
+    bytec_0 // "ig"
+    swap
+    concat
+    box_get
+    bury 1
+    // smart_contracts/splitwise/contract.py:143
+    // assert is_p2, "Participant 2 not in group"
+    assert // Participant 2 not in group
+    // smart_contracts/splitwise/contract.py:144
+    // key2 = expense_id * UInt64(2**16) + p_index
+    frame_dig 2
+    intc_2 // 65536
+    *
+    frame_dig 4
+    dup
+    cover 2
+    +
+    // smart_contracts/splitwise/contract.py:145
+    // self.expense_participants[key2] = participant2
+    itob
+    bytec_3 // "xp"
+    swap
+    concat
+    frame_dig -3
+    box_put
+    // smart_contracts/splitwise/contract.py:146
+    // p_index += UInt64(1)
+    intc_0 // 1
+    +
+    frame_bury 0
+
+add_expense_after_if_else@4:
+    frame_dig 0
+    dup
+    frame_bury 4
+    // smart_contracts/splitwise/contract.py:148
+    // if participant3 != Global.zero_address:
+    frame_dig -2
+    global ZeroAddress
+    !=
+    swap
+    frame_bury 0
+    bz add_expense_after_if_else@6
+    // smart_contracts/splitwise/contract.py:42
+    // return op.concat(op.itob(group_id), account.bytes)
+    frame_dig 1
+    frame_dig -2
+    concat
+    // smart_contracts/splitwise/contract.py:149
+    // p3_val, is_p3 = self.is_group_member.maybe(self._group_member_key(group_id, participant3))
+    bytec_0 // "ig"
+    swap
+    concat
+    box_get
+    bury 1
+    // smart_contracts/splitwise/contract.py:150
+    // assert is_p3, "Participant 3 not in group"
+    assert // Participant 3 not in group
+    // smart_contracts/splitwise/contract.py:151
+    // key3 = expense_id * UInt64(2**16) + p_index
+    frame_dig 2
+    intc_2 // 65536
+    *
+    frame_dig 4
+    dup
+    cover 2
+    +
+    // smart_contracts/splitwise/contract.py:152
+    // self.expense_participants[key3] = participant3
+    itob
+    bytec_3 // "xp"
+    swap
+    concat
+    frame_dig -2
+    box_put
+    // smart_contracts/splitwise/contract.py:153
+    // p_index += UInt64(1)
+    intc_0 // 1
+    +
+    frame_bury 0
+
+add_expense_after_if_else@6:
+    frame_dig 0
+    // smart_contracts/splitwise/contract.py:155
+    // assert p_index > 0, "Must have at least one participant"
+    dup
+    assert // Must have at least one participant
+    // smart_contracts/splitwise/contract.py:157
+    // self.expense_participant_count[expense_id] = p_index
+    bytec 10 // "en"
+    frame_dig 3
+    dup
+    cover 3
+    concat
+    dig 1
+    itob
+    box_put
+    // smart_contracts/splitwise/contract.py:158-159
+    // # Each participant's share = amount / number of participants
+    // self.expense_share[expense_id] = amount // p_index
+    bytec 11 // "es"
+    uncover 2
+    concat
+    frame_dig -5
+    uncover 2
+    /
+    itob
+    box_put
+    // smart_contracts/splitwise/contract.py:161
+    // return expense_id
+    frame_dig 2
+    frame_bury 0
+    retsub
+
+
+// smart_contracts.splitwise.contract.Splitwise.settle_expense(expense_id: uint64, pay_txn: uint64) -> uint64:
+settle_expense:
+    // smart_contracts/splitwise/contract.py:163-168
+    // @abimethod()
+    // def settle_expense(
+    //     self,
+    //     expense_id: UInt64,
+    //     pay_txn: gtxn.PaymentTransaction,
+    // ) -> UInt64:
+    proto 2 1
+    pushbytes ""
+    // smart_contracts/splitwise/contract.py:172
+    // payer_val, exists = self.expense_payer.maybe(expense_id)
+    frame_dig -2
+    itob
+    dup
+    bytec 8 // "ep"
+    dig 1
+    concat
+    dup
+    box_get
+    bury 1
+    // smart_contracts/splitwise/contract.py:173
+    // assert exists, "Expense does not exist"
+    assert // Expense does not exist
+    // smart_contracts/splitwise/contract.py:175
+    // payer = self.expense_payer[expense_id]
+    box_get
+    swap
+    dup
+    cover 3
+    cover 3
+    assert // check self.expense_payer entry exists
+    // smart_contracts/splitwise/contract.py:176
+    // share = self.expense_share[expense_id]
+    bytec 11 // "es"
+    dig 1
+    concat
+    box_get
+    swap
+    btoi
+    cover 3
+    assert // check self.expense_share entry exists
+    // smart_contracts/splitwise/contract.py:178-179
+    // # Caller cannot be the payer
+    // assert Txn.sender != payer, "Payer cannot settle with themselves"
+    txn Sender
+    uncover 2
+    !=
+    assert // Payer cannot settle with themselves
+    // smart_contracts/splitwise/contract.py:46
+    // return op.concat(op.itob(expense_id), account.bytes)
+    dup
+    // smart_contracts/splitwise/contract.py:181-182
+    // # Check caller hasn't already settled
+    // settle_key = self._settlement_key(expense_id, Txn.sender)
+    txn Sender
+    // smart_contracts/splitwise/contract.py:46
+    // return op.concat(op.itob(expense_id), account.bytes)
+    concat
+    // smart_contracts/splitwise/contract.py:183
+    // settle_val, already_settled = self.has_settled.maybe(settle_key)
+    pushbytes "hs"
+    swap
+    concat
+    dup
+    cover 2
+    box_get
+    bury 1
+    // smart_contracts/splitwise/contract.py:184
+    // assert not already_settled, "Already settled this expense"
+    !
+    assert // Already settled this expense
+    // smart_contracts/splitwise/contract.py:186-187
+    // # Verify caller is a participant
+    // p_count = self.expense_participant_count[expense_id]
+    bytec 10 // "en"
+    swap
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.expense_participant_count entry exists
+    // smart_contracts/splitwise/contract.py:188
+    // is_participant = False
+    intc_1 // 0
+    // smart_contracts/splitwise/contract.py:189
+    // for i in urange(p_count):
+    dup
+
+settle_expense_for_header@1:
+    // smart_contracts/splitwise/contract.py:189
+    // for i in urange(p_count):
+    frame_dig 7
+    frame_dig 5
+    <
+    frame_dig 6
+    frame_bury 0
+    bz settle_expense_after_for@6
+    // smart_contracts/splitwise/contract.py:190
+    // key = expense_id * UInt64(2**16) + i
+    frame_dig -2
+    intc_2 // 65536
+    *
+    frame_dig 7
+    +
+    // smart_contracts/splitwise/contract.py:191
+    // participant = self.expense_participants[key]
+    itob
+    bytec_3 // "xp"
+    swap
+    concat
+    box_get
+    assert // check self.expense_participants entry exists
+    // smart_contracts/splitwise/contract.py:192
+    // if participant == Txn.sender:
+    txn Sender
+    ==
+    bz settle_expense_after_if_else@4
+    // smart_contracts/splitwise/contract.py:193
+    // is_participant = True
+    intc_0 // 1
+    frame_bury 0
+
+settle_expense_after_for@6:
+    frame_dig 0
+    // smart_contracts/splitwise/contract.py:196
+    // assert is_participant, "Caller is not a participant in this expense"
+    assert // Caller is not a participant in this expense
+    // smart_contracts/splitwise/contract.py:198-199
+    // # Verify payment
+    // assert pay_txn.receiver == payer, "Payment must go to the expense payer"
+    frame_dig -1
+    gtxns Receiver
+    frame_dig 2
+    ==
+    assert // Payment must go to the expense payer
+    // smart_contracts/splitwise/contract.py:200
+    // assert pay_txn.amount >= share, "Payment must cover your share"
+    frame_dig -1
+    gtxns Amount
+    frame_dig 3
+    >=
+    assert // Payment must cover your share
+    // smart_contracts/splitwise/contract.py:202-203
+    // # Mark as settled
+    // self.has_settled[settle_key] = UInt64(1)
+    intc_0 // 1
+    itob
+    frame_dig 4
+    swap
+    box_put
+    // smart_contracts/splitwise/contract.py:204
+    // settled = self.expense_settled_count[expense_id] + UInt64(1)
+    bytec 9 // "sc"
+    frame_dig 1
+    concat
+    dup
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.expense_settled_count entry exists
+    intc_0 // 1
+    +
+    // smart_contracts/splitwise/contract.py:205
+    // self.expense_settled_count[expense_id] = settled
+    dup
+    itob
+    uncover 2
+    swap
+    box_put
+    // smart_contracts/splitwise/contract.py:207
+    // remaining = p_count - settled
+    frame_dig 5
+    swap
+    -
+    // smart_contracts/splitwise/contract.py:208
+    // return remaining
+    frame_bury 0
+    retsub
+
+settle_expense_after_if_else@4:
+    // smart_contracts/splitwise/contract.py:189
+    // for i in urange(p_count):
+    frame_dig 7
+    intc_0 // 1
+    +
+    frame_bury 7
+    b settle_expense_for_header@1
+
+
+// smart_contracts.splitwise.contract.Splitwise.close_group(group_id: uint64) -> void:
+close_group:
+    // smart_contracts/splitwise/contract.py:210-211
+    // @abimethod()
+    // def close_group(self, group_id: UInt64) -> None:
+    proto 1 0
+    // smart_contracts/splitwise/contract.py:213
+    // creator = self.group_creator[group_id]
+    frame_dig -1
+    itob
+    bytec 6 // "gc"
+    dig 1
+    concat
+    box_get
+    assert // check self.group_creator entry exists
+    // smart_contracts/splitwise/contract.py:214
+    // assert Txn.sender == creator, "Only the group creator can close the group"
+    txn Sender
+    ==
+    assert // Only the group creator can close the group
+    // smart_contracts/splitwise/contract.py:215
+    // assert self.group_active[group_id] == UInt64(1), "Group already closed"
+    bytec 7 // "ga"
+    swap
+    concat
+    dup
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.group_active entry exists
+    intc_0 // 1
+    ==
+    assert // Group already closed
+    // smart_contracts/splitwise/contract.py:217
+    // self.group_active[group_id] = UInt64(0)
+    intc_1 // 0
+    itob
+    box_put
+    retsub
+
+
+// smart_contracts.splitwise.contract.Splitwise.get_expense_info(expense_id: uint64) -> uint64, uint64, uint64, uint64:
+get_expense_info:
+    // smart_contracts/splitwise/contract.py:219-220
+    // @abimethod()
+    // def get_expense_info(self, expense_id: UInt64) -> tuple[UInt64, UInt64, UInt64, UInt64]:
+    proto 1 4
+    // smart_contracts/splitwise/contract.py:222
+    // payer_val2, exists = self.expense_payer.maybe(expense_id)
+    frame_dig -1
+    itob
+    bytec 8 // "ep"
+    dig 1
+    concat
+    box_get
+    bury 1
+    // smart_contracts/splitwise/contract.py:223
+    // assert exists, "Expense does not exist"
+    assert // Expense does not exist
+    // smart_contracts/splitwise/contract.py:226
+    // self.expense_amount[expense_id],
+    bytec 12 // "ea"
+    dig 1
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.expense_amount entry exists
+    // smart_contracts/splitwise/contract.py:227
+    // self.expense_share[expense_id],
+    bytec 11 // "es"
+    dig 2
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.expense_share entry exists
+    // smart_contracts/splitwise/contract.py:228
+    // self.expense_participant_count[expense_id],
+    bytec 10 // "en"
+    dig 3
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.expense_participant_count entry exists
+    // smart_contracts/splitwise/contract.py:229
+    // self.expense_settled_count[expense_id],
+    bytec 9 // "sc"
+    uncover 4
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.expense_settled_count entry exists
+    // smart_contracts/splitwise/contract.py:225-230
+    // return (
+    //     self.expense_amount[expense_id],
+    //     self.expense_share[expense_id],
+    //     self.expense_participant_count[expense_id],
+    //     self.expense_settled_count[expense_id],
+    // )
+    retsub

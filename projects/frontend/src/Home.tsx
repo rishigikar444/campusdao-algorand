@@ -1,0 +1,137 @@
+import { useWallet } from '@txnlab/use-wallet-react'
+import { useState, useEffect } from 'react'
+import ConnectWallet from './components/ConnectWallet'
+import EventsTab from './components/EventsTab'
+import CreateEventTab from './components/CreateEventTab'
+import TreasuryTab from './components/TreasuryTab'
+import SplitwiseTab from './components/SplitwiseTab'
+import XpWindow from './components/XpWindow'
+import { ellipseAddress } from './utils/ellipseAddress'
+
+type Tab = 'events' | 'createEvent' | 'treasury' | 'splitwise'
+
+const TAB_LABELS: Record<Tab, string> = {
+  events: 'Events',
+  createEvent: 'Create Event',
+  treasury: 'Treasury',
+  splitwise: 'Splitwise',
+}
+
+// Tabs visible in the tab strip (createEvent is navigated to, not shown in strip)
+const VISIBLE_TABS: Tab[] = ['events', 'treasury', 'splitwise']
+
+const Home = () => {
+  const [openWalletModal, setOpenWalletModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<Tab>('events')
+  const { activeAddress } = useWallet()
+  const [clock, setClock] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setClock(new Date()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const toggleWalletModal = () => setOpenWalletModal(!openWalletModal)
+
+  return (
+    <div className="xp-desktop relative" style={{ paddingBottom: '36px' }}>
+      {/* Main Content */}
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        <XpWindow title={`Campus SuperApp - [${TAB_LABELS[activeTab]}]`}>
+          {/* Tab Strip */}
+          <div className="flex items-end gap-0 px-2 -mb-px" style={{ borderBottom: '1px solid #808080' }}>
+            {VISIBLE_TABS.map((tab) => (
+              <button
+                key={tab}
+                className={activeTab === tab ? 'xp-tab-active' : 'xp-tab-inactive'}
+                onClick={() => setActiveTab(tab)}
+              >
+                {TAB_LABELS[tab]}
+              </button>
+            ))}
+            {/* Show Create Event tab only when active */}
+            {activeTab === 'createEvent' && (
+              <button className="xp-tab-active">
+                {TAB_LABELS.createEvent}
+              </button>
+            )}
+          </div>
+
+          {/* Tab Content */}
+          <div className="p-4" style={{ backgroundColor: '#ECE9D8', borderTop: '1px solid #808080' }}>
+            {!activeAddress ? (
+              <div className="text-center py-12">
+                <h2 className="text-xl font-bold font-xp text-xp-title-blue mb-4">
+                  Connect your wallet to get started
+                </h2>
+                <button className="xp-btn px-6 py-2" onClick={toggleWalletModal}>
+                  Connect Wallet
+                </button>
+              </div>
+            ) : (
+              <>
+                {activeTab === 'events' && (
+                  <EventsTab onNavigateToCreate={() => setActiveTab('createEvent')} />
+                )}
+                {activeTab === 'createEvent' && (
+                  <CreateEventTab onBack={() => setActiveTab('events')} />
+                )}
+                {activeTab === 'treasury' && <TreasuryTab />}
+                {activeTab === 'splitwise' && <SplitwiseTab />}
+              </>
+            )}
+          </div>
+        </XpWindow>
+      </div>
+
+      {/* XP Taskbar */}
+      <div className="xp-taskbar">
+        <button className="xp-start-btn">
+          <span className="text-lg">&#127987;</span>
+          start
+        </button>
+
+        {/* Taskbar Tab Items */}
+        <div className="flex items-center gap-1 ml-2 flex-1 overflow-hidden">
+          {VISIBLE_TABS.map((tab) => (
+            <button
+              key={tab}
+              className={`xp-taskbar-item ${activeTab === tab ? 'xp-taskbar-item-active' : ''}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {TAB_LABELS[tab]}
+            </button>
+          ))}
+        </div>
+
+        {/* System Tray */}
+        <div className="xp-systray">
+          {activeAddress && (
+            <button
+              className="hover:underline cursor-pointer"
+              onClick={toggleWalletModal}
+              title={activeAddress}
+            >
+              {ellipseAddress(activeAddress)}
+            </button>
+          )}
+          {!activeAddress && (
+            <button
+              className="hover:underline cursor-pointer"
+              onClick={toggleWalletModal}
+            >
+              Connect
+            </button>
+          )}
+          <span className="border-l border-blue-400 pl-2">
+            {clock.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      </div>
+
+      <ConnectWallet openModal={openWalletModal} closeModal={toggleWalletModal} />
+    </div>
+  )
+}
+
+export default Home
